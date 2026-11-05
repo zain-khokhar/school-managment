@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import date
 import io
+import re
 from typing import Any
 
 from num2words import num2words
@@ -147,6 +148,13 @@ class AttendanceService:
             raise ValidationError("Date should be less than or equal to current date!")
 
         with self.db.connection() as conn:
+            stu_count = conn.execute(
+                "SELECT COUNT(*) AS cnt FROM student_student WHERE standard_id = ? AND state = 'done'",
+                (standard_id,),
+            ).fetchone()["cnt"]
+            if stu_count == 0:
+                raise ValidationError("No Students are found for selected criteria!")
+
             dup = conn.execute(
                 """
                 SELECT id FROM daily_attendance
@@ -459,8 +467,8 @@ class AttendanceService:
             ws.write(0, 0, "No Attendance Sheets Found", header_fmt)
         else:
             for idx, sh in enumerate(sheets, start=1):
-                title = f"{sh['class_name']}_{sh['name']}"[:31].replace("/", "-")
-                ws = workbook.add_worksheet(f"{idx}_{title}"[:31])
+                raw_title = re.sub(r"[\[\]:*?/\\]", "-", f"{sh['class_name']}_{sh['name']}")
+                ws = workbook.add_worksheet(f"{idx}_{raw_title}"[:31])
                 ws.write(0, 0, "Roll No", header_fmt)
                 ws.write(0, 1, "Student Name", header_fmt)
                 ws.set_column(1, 1, 24)
