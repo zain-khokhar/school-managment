@@ -1,0 +1,9 @@
+num2words>=0.5.13
+XlsxWriter>=3.1.9
+python-dateutil>=2.9.0
+whool>=1.2
+flask>=3.0.0
+pywebview>=5.0.0
+pyinstaller>=6.0.0
+pytest>=8.0.0
+pytest-cov>=5.0.0

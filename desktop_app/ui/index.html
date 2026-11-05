@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;" />
+  <title>School Management ERP — Standalone Desktop Edition</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Left Navigation Sidebar (All 10 Assembled Modules) -->
+    <aside class="sidebar">
+      <div class="brand-header">
+        <div class="brand-badge">SM</div>
+        <div>
+          <div class="brand-title">School ERP v18</div>
+          <div class="brand-subtitle">10-Module SQLite Engine</div>
+        </div>
+      </div>
+
+      <ul class="nav-list" id="nav-list">
+        <li>
+          <button class="nav-btn active" data-tab="dashboard">
+            <span>Overview Dashboard</span>
+            <span class="nav-pill">10</span>
+          </button>
+        </li>
+        <li>
+          <button class="nav-btn" data-tab="school">
+            <span>1. School &amp; Students</span>
+            <span class="nav-pill" id="pill-school">0</span>
+          </button>
+        </li>
+        <li>
+          <button class="nav-btn" data-tab="fees">
+            <span>2. School Fees</span>
+            <span class="nav-pill" id="pill-fees">0</span>
+          </button>
+        </li>
+        <li>
+          <button class="nav-btn" data-tab="attendance">
+            <span>3. Attendance &amp; XLSX</span>
+            <span class="nav-pill" id="pill-attendance">0</span>
+          </button>
+        </li>
+        <li>
+          <button class="nav-btn" data-tab="assignment">
+            <span>4. Assignments</span>
+            <span class="nav-pill" id="pill-assignment">0</span>
+          </button>
+        </li>
+        <li>
+          <button class="nav-btn" data-tab="timetable">
+            <span>5. Timetables</span>
+            <span class="nav-pill" id="pill-timetable">0</span>
+          </button>
+        </li>
+        <li>
+          <button class="nav-btn" data-tab="exam">
+            <span>6. Exams &amp; Results</span>
+            <span class="nav-pill" id="pill-exam">0</span>
+          </button>
+        </li>
+        <li>
+          <button class="nav-btn" data-tab="library">
+            <span>7. Library System</span>
+            <span class="nav-pill" id="pill-library">0</span>
+          </button>
+        </li>
+        <li>
+          <button class="nav-btn" data-tab="event">
+            <span>8. School Events</span>
+            <span class="nav-pill" id="pill-event">0</span>
+          </button>
+        </li>
+        <li>
+          <button class="nav-btn" data-tab="hostel">
+            <span>9. School Hostel</span>
+            <span class="nav-pill" id="pill-hostel">0</span>
+          </button>
+        </li>
+        <li>
+          <button class="nav-btn" data-tab="transport">
+            <span>10. School Transport</span>
+            <span class="nav-pill" id="pill-transport">0</span>
+          </button>
+        </li>
+      </ul>
+
+      <div class="sidebar-footer">
+        <div>SQLite WAL Mode • Offline Ready</div>
+        <div id="db-status-label" style="margin-top:3px;">Connected</div>
+      </div>
+    </aside>
+
+    <!-- Main Workspace -->
+    <main class="workspace">
+      <header class="topbar">
+        <div class="topbar-left">
+          <h1 class="page-title" id="page-title">Overview Dashboard</h1>
+          <span class="engine-tag">100% Domain Logic Active</span>
+        </div>
+        <div class="topbar-actions">
+          <input
+            type="search"
+            id="global-search"
+            class="search-input"
+            placeholder="Filter current view..."
+          />
+          <button class="btn" id="btn-refresh">Refresh Data</button>
+        </div>
+      </header>
+
+      <section class="content-scroll" id="main-view">
+        <!-- Rendered dynamically by app.js -->
+      </section>
+    </main>
+  </div>
+
+  <!-- Reusable Action / Creation Modal -->
+  <div class="modal-backdrop" id="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title" id="modal-title">New Record</div>
+        <button class="btn btn-xs" id="modal-close">✕</button>
+      </div>
+      <form id="modal-form">
+        <div class="modal-body" id="modal-body"></div>
+        <div class="modal-footer">
+          <button type="button" class="btn" id="modal-cancel">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="modal-submit">Save &amp; Validate</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toast-container"></div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
+
