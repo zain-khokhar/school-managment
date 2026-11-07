@@ -1,143 +1,136 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;" />
-  <title>School Management ERP — Standalone Desktop Edition</title>
-  <link rel="stylesheet" href="/static/styles.css" />
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;" />
+  <title>School Management ERP</title>
+
+  <!-- Design system — load order matters ("Kaghaz aur Siyahi") -->
+  <link rel="stylesheet" href="/static/css/tokens.css" />
+  <link rel="stylesheet" href="/static/css/base.css" />
+  <link rel="stylesheet" href="/static/css/layout.css" />
+  <link rel="stylesheet" href="/static/css/components.css" />
+  <link rel="stylesheet" href="/static/css/feedback-and-screens.css" />
 </head>
+
 <body>
+
   <div class="app-shell">
-    <!-- Left Navigation Sidebar (All 10 Assembled Modules) -->
-    <aside class="sidebar">
-      <div class="brand-header">
-        <div class="brand-badge">SM</div>
+
+    <!-- ── Left Sidebar ──────────────────────────────────────── -->
+    <aside class="sidebar" role="navigation" aria-label="Main navigation">
+
+      <!-- Brand Header -->
+      <div class="sidebar-brand">
+        <div class="sidebar-brand-logo" aria-hidden="true">S</div>
         <div>
-          <div class="brand-title">School ERP v18</div>
-          <div class="brand-subtitle">10-Module SQLite Engine</div>
+          <div class="sidebar-brand-name" id="brand-school-name">School ERP</div>
+          <div class="sidebar-brand-sub">Offline Ready • Single PC</div>
         </div>
       </div>
 
-      <ul class="nav-list" id="nav-list">
-        <li>
-          <button class="nav-btn active" data-tab="dashboard">
-            <span>Overview Dashboard</span>
-            <span class="nav-pill">10</span>
-          </button>
-        </li>
-        <li>
-          <button class="nav-btn" data-tab="school">
-            <span>1. School &amp; Students</span>
-            <span class="nav-pill" id="pill-school">0</span>
-          </button>
-        </li>
-        <li>
-          <button class="nav-btn" data-tab="fees">
-            <span>2. School Fees</span>
-            <span class="nav-pill" id="pill-fees">0</span>
-          </button>
-        </li>
-        <li>
-          <button class="nav-btn" data-tab="attendance">
-            <span>3. Attendance &amp; XLSX</span>
-            <span class="nav-pill" id="pill-attendance">0</span>
-          </button>
-        </li>
-        <li>
-          <button class="nav-btn" data-tab="assignment">
-            <span>4. Assignments</span>
-            <span class="nav-pill" id="pill-assignment">0</span>
-          </button>
-        </li>
-        <li>
-          <button class="nav-btn" data-tab="timetable">
-            <span>5. Timetables</span>
-            <span class="nav-pill" id="pill-timetable">0</span>
-          </button>
-        </li>
-        <li>
-          <button class="nav-btn" data-tab="exam">
-            <span>6. Exams &amp; Results</span>
-            <span class="nav-pill" id="pill-exam">0</span>
-          </button>
-        </li>
-        <li>
-          <button class="nav-btn" data-tab="library">
-            <span>7. Library System</span>
-            <span class="nav-pill" id="pill-library">0</span>
-          </button>
-        </li>
-        <li>
-          <button class="nav-btn" data-tab="event">
-            <span>8. School Events</span>
-            <span class="nav-pill" id="pill-event">0</span>
-          </button>
-        </li>
-        <li>
-          <button class="nav-btn" data-tab="hostel">
-            <span>9. School Hostel</span>
-            <span class="nav-pill" id="pill-hostel">0</span>
-          </button>
-        </li>
-        <li>
-          <button class="nav-btn" data-tab="transport">
-            <span>10. School Transport</span>
-            <span class="nav-pill" id="pill-transport">0</span>
-          </button>
-        </li>
-      </ul>
+      <!-- Nav Items (built by router.js) -->
+      <nav class="sidebar-nav" aria-label="Modules">
+        <ul id="nav-list" role="list">
+          <li>
+            <button class="sidebar-nav-item active" data-tab="dashboard">
+              <span class="sidebar-nav-icon" aria-hidden="true">🏠</span>
+              <span class="sidebar-nav-label">Dashboard</span>
+            </button>
+          </li>
+        </ul>
+      </nav>
 
+      <!-- Sidebar Footer -->
       <div class="sidebar-footer">
-        <div>SQLite WAL Mode • Offline Ready</div>
-        <div id="db-status-label" style="margin-top:3px;">Connected</div>
+        <div>Offline-First Desktop Edition</div>
+        <div class="sidebar-footer-status">
+          <div class="status-dot" id="db-status-dot"></div>
+          <span id="db-status-label">Connected</span>
+        </div>
       </div>
+
     </aside>
 
-    <!-- Main Workspace -->
-    <main class="workspace">
-      <header class="topbar">
+    <!-- ── Main Workspace ─────────────────────────────────────── -->
+    <main class="workspace" role="main">
+
+      <!-- Topbar -->
+      <header class="topbar" role="banner">
         <div class="topbar-left">
-          <h1 class="page-title" id="page-title">Overview Dashboard</h1>
-          <span class="engine-tag">100% Domain Logic Active</span>
+          <h1 class="page-title" id="page-title">Dashboard</h1>
+          <span class="page-breadcrumb" id="page-breadcrumb" aria-hidden="true"></span>
         </div>
-        <div class="topbar-actions">
-          <input
-            type="search"
-            id="global-search"
-            class="search-input"
-            placeholder="Filter current view..."
-          />
-          <button class="btn" id="btn-refresh">Refresh Data</button>
+
+        <div class="topbar-right">
+          <!-- Global Search -->
+          <div class="topbar-search" role="search">
+            <span class="topbar-search-icon" aria-hidden="true">🔍</span>
+            <input type="search" id="topbar-search-input" class="topbar-search-input"
+              autocomplete="off" aria-label="Global search" />
+            <kbd class="topbar-search-kbd" title="Ctrl+K to focus">Ctrl K</kbd>
+          </div>
+
+          <!-- Refresh button -->
+          <button class="topbar-btn" id="btn-refresh" title="Data refresh karein" aria-label="Refresh data">
+            🔄
+          </button>
         </div>
       </header>
 
-      <section class="content-scroll" id="main-view">
-        <!-- Rendered dynamically by app.js -->
-      </section>
+      <!-- Content Area -->
+      <div class="content-area" id="content-area">
+        <div class="content-inner">
+          <section id="main-view" aria-live="polite" aria-label="Main content">
+            <div class="panel">
+              <div class="panel-body">
+                <div class="skeleton skeleton-title" style="width:200px"></div>
+                <div class="skeleton skeleton-row" style="margin-top:16px"></div>
+                <div class="skeleton skeleton-row"></div>
+                <div class="skeleton skeleton-row"></div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+
     </main>
   </div>
 
-  <!-- Reusable Action / Creation Modal -->
-  <div class="modal-backdrop" id="modal-backdrop">
+  <!-- ── Modal (shared, single instance) ─────────────────────── -->
+  <div class="modal-backdrop" id="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title">
     <div class="modal-card">
       <div class="modal-header">
-        <div class="modal-title" id="modal-title">New Record</div>
-        <button class="btn btn-xs" id="modal-close">✕</button>
+        <div class="modal-title" id="modal-title">Record</div>
+        <button class="btn btn-icon btn-ghost btn-sm" id="modal-close" aria-label="Modal band karein">✕</button>
       </div>
-      <form id="modal-form">
+      <form id="modal-form" novalidate>
         <div class="modal-body" id="modal-body"></div>
-        <div class="modal-footer">
-          <button type="button" class="btn" id="modal-cancel">Cancel</button>
-          <button type="submit" class="btn btn-primary" id="modal-submit">Save &amp; Validate</button>
+        <div class="modal-footer" id="modal-footer">
+          <button type="button" class="btn btn-secondary" id="modal-cancel">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="modal-submit">Save</button>
         </div>
       </form>
     </div>
   </div>
 
-  <div class="toast-container" id="toast-container"></div>
+  <!-- ── Toast Container ──────────────────────────────────────── -->
+  <div class="toast-container" id="toast-container" aria-live="polite" aria-atomic="false">
+  </div>
 
+  <!-- ── Scripts (Strangler-Fig Order: Legacy Bridge first, then ES Module Shell) ── -->
   <script src="/static/app.js"></script>
-</body>
-</html>
+  <script type="module" src="/static/js/main.js"></script>
 
+  <script>
+    document.getElementById('btn-refresh')?.addEventListener('click', () => {
+      window.location.reload();
+    });
+  </script>
+
+</body>
+
+</html>

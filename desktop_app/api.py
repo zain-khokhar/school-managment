@@ -8,6 +8,7 @@ import sys
 from typing import Any
 
 from flask import Flask, Response, jsonify, request, send_file, send_from_directory
+from werkzeug.exceptions import HTTPException
 
 from desktop_app.database import Database
 from desktop_app.exceptions import NotFoundError, SchoolERPError
@@ -23,6 +24,8 @@ from desktop_app.services.fees_service import FeesService
 from desktop_app.services.library_service import LibraryService
 from desktop_app.services.school_service import SchoolService
 from desktop_app.services.seed_service import ensure_seed_data
+import logging
+from desktop_app.routes.phase1_routes import register_phase1_routes
 from desktop_app.services.timetable_service import TimetableService
 
 
@@ -69,9 +72,16 @@ def create_app(db: Database | None = None, seed: bool = True) -> Flask:
     def handle_erp_error(exc: SchoolERPError) -> tuple[Response, int]:
         return jsonify({"ok": False, "error": str(exc)}), 400
 
+    @app.get("/favicon.ico")
+    def favicon() -> tuple[str, int]:
+        return "", 204
+
     @app.errorhandler(Exception)
-    def handle_unexpected_error(exc: Exception) -> tuple[Response, int]:
-        return jsonify({"ok": False, "error": str(exc)}), 500
+    def handle_unexpected_error(exc: Exception) -> Any:
+        if isinstance(exc, HTTPException):
+            return exc
+        logging.getLogger("school_erp.api").exception("Unhandled API error: %s", exc)
+        return jsonify({"ok": False, "error": "Internal server error occurred."}), 500
 
     # -------------------------------------------------------------------------
     # UI Entrypoint & Bootstrap Snapshot
@@ -610,5 +620,11 @@ def create_app(db: Database | None = None, seed: bool = True) -> Flask:
             int(data["new_vehicle_id"]),
         )
         return jsonify({"ok": True, "participant": updated})
+
+
+    # -------------------------------------------------------------------------
+    # Phase 1 Modular Routes (Students Pagination, Today Haziri, Bulk Mark, Search)
+    # -------------------------------------------------------------------------
+    register_phase1_routes(app, database, att_svc)
 
     return app

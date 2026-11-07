@@ -1,0 +1,84 @@
+/*
+ * tokens.css — Kaghaz aur Siyahi Design Tokens
+ * Har color WCAG AA compliant hai (minimum 4.5:1 contrast ratio)
+ * Koi naya color mat add karo — sirf yahan se use karo
+ */
+
+:root {
+  /* ── Core Palette ─────────────────────────────────────────── */
+  --kaghaz:        #F6F1E7;   /* main canvas background (parchment)   */
+  --surface:       #FFFFFF;   /* card/panel background                 */
+  --siyahi:        #231F1C;   /* primary text — 16.35:1 vs white       */
+  --siyahi-soft:   #6B6259;   /* muted text — 5.97:1 vs white          */
+  --chai:          #8A4B16;   /* primary action — 6.78:1 vs white      */
+  --chai-hover:    #733C10;   /* primary hover                         */
+  --chai-active:   #5E3009;   /* primary pressed                       */
+  --neel:          #2F6690;   /* links, focus ring — 6.13:1 vs white   */
+  --haldi:         #E2A32B;   /* accent/highlight — 6.93:1 vs sidebar  */
+
+  /* ── Status Colors (text on colored bg) ──────────────────── */
+  --surkh:         #B3261E;   /* danger/error text — 6.54:1 vs white   */
+  --pista-bg:      #E4EED8;   /* success background                    */
+  --pista-text:    #2F5A14;   /* success text — 6.76:1 vs pista-bg     */
+  --warn-bg:       #FBEBC4;   /* warning background                    */
+  --warn-text:     #6B4500;   /* warning text — 7.18:1 vs warn-bg      */
+  --danger-bg:     #F9DEDC;   /* danger background                     */
+  --danger-text:   #8C1D18;   /* danger text — 7.17:1 vs danger-bg     */
+  --info-bg:       #DCEAF4;   /* info background                       */
+  --info-text:     #1F4A6E;   /* info text — 7.56:1 vs info-bg         */
+
+  /* ── Sidebar ─────────────────────────────────────────────── */
+  --sidebar:       #2A2420;   /* sidebar background                    */
+  --sidebar-text:  #E9E1D3;   /* sidebar nav text — 11.79:1 vs sidebar */
+  --sidebar-muted: #B9AD9B;   /* sidebar secondary text                */
+  --sidebar-hover: #3D3028;   /* sidebar item hover                    */
+  --sidebar-active:#4A3A2D;   /* sidebar item active                   */
+
+  /* ── UI Structural ───────────────────────────────────────── */
+  --input-border:  #8C8274;   /* input/select border — 3.78:1 vs white */
+  --rule-line:     #E3DAC9;   /* table rules, dividers                 */
+  --focus-ring:    rgba(47, 102, 144, 0.4);  /* neel focus ring        */
+
+  /* ── Typography ──────────────────────────────────────────── */
+  --font-ui:       "Segoe UI", -apple-system, BlinkMacSystemFont, "Roboto", sans-serif;
+  --font-urdu:     "Noto Nastaliq Urdu", "Jameel Noori Nastaleeq", serif;
+  --text-size:     14px;
+  --text-sm:       12.5px;
+  --text-xs:       11.5px;
+  --line-height:   1.5;
+
+  /* ── Spacing ─────────────────────────────────────────────── */
+  --sp-1:  4px;
+  --sp-2:  8px;
+  --sp-3:  12px;
+  --sp-4:  16px;
+  --sp-5:  20px;
+  --sp-6:  24px;
+  --sp-8:  32px;
+  --sp-10: 40px;
+  --sp-12: 48px;
+
+  /* ── Radius ──────────────────────────────────────────────── */
+  --radius:       8px;
+  --radius-inner: 4px;
+  --radius-pill:  100px;
+
+  /* ── Shadows ─────────────────────────────────────────────── */
+  --shadow-xs: 0 1px 2px rgba(35, 31, 28, 0.06);
+  --shadow-sm: 0 2px 6px rgba(35, 31, 28, 0.08);
+  --shadow-md: 0 4px 16px rgba(35, 31, 28, 0.10);
+  --shadow-lg: 0 8px 32px rgba(35, 31, 28, 0.14);
+
+  /* ── Transitions ─────────────────────────────────────────── */
+  --t-fast:   120ms ease;
+  --t-normal: 200ms ease;
+  --t-slow:   320ms ease;
+
+  /* ── Z-index layers ──────────────────────────────────────── */
+  --z-base:    1;
+  --z-sticky:  10;
+  --z-modal:   100;
+  --z-toast:   200;
+  --z-tooltip: 300;
+}
+

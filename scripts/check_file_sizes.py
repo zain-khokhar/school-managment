@@ -1,0 +1,64 @@
+"""
+scripts/check_file_sizes.py — Enforce Phase 1 Anti-Monolith File Size Rules
+
+Budgets (from ADVANCEMENT_PLAN.md Section 10.1):
+  - New JS modules (`desktop_app/ui/js/**/*.js`): target <= 200 lines, hard ceiling <= 300 lines
+  - New CSS files (`desktop_app/ui/css/*.css`): hard ceiling <= 600 lines
+  - New Python routes (`desktop_app/routes/*.py`): target <= 250 lines, hard ceiling <= 400 lines
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+import sys
+
+ROOT = Path(__file__).resolve().parent.parent
+
+
+def check_files() -> int:
+    violations: list[str] = []
+    checked = 0
+
+    print("=== Phase 1 File Size & Modularity Check ===")
+
+    for js_file in sorted((ROOT / "desktop_app" / "ui" / "js").rglob("*.js")):
+        lines = len(js_file.read_text(encoding="utf-8").splitlines())
+        rel = js_file.relative_to(ROOT)
+        checked += 1
+        status = "OK" if lines <= 300 else "VIOLATION (>300)"
+        print(f"  [JS]  {str(rel):48s} : {lines:4d} lines  [{status}]")
+        if lines > 300:
+            violations.append(f"{rel} has {lines} lines (max 300)")
+
+    for css_file in sorted((ROOT / "desktop_app" / "ui" / "css").rglob("*.css")):
+        lines = len(css_file.read_text(encoding="utf-8").splitlines())
+        rel = css_file.relative_to(ROOT)
+        checked += 1
+        status = "OK" if lines <= 600 else "VIOLATION (>600)"
+        print(f"  [CSS] {str(rel):48s} : {lines:4d} lines  [{status}]")
+        if lines > 600:
+            violations.append(f"{rel} has {lines} lines (max 600)")
+
+    for py_file in sorted((ROOT / "desktop_app" / "routes").rglob("*.py")):
+        lines = len(py_file.read_text(encoding="utf-8").splitlines())
+        rel = py_file.relative_to(ROOT)
+        checked += 1
+        status = "OK" if lines <= 400 else "VIOLATION (>400)"
+        print(f"  [PY]  {str(rel):48s} : {lines:4d} lines  [{status}]")
+        if lines > 400:
+            violations.append(f"{rel} has {lines} lines (max 400)")
+
+    print(f"\nChecked {checked} Phase 1 files.")
+    if violations:
+        print("FAILED violations:")
+        for v in violations:
+            print(f"  - {v}")
+        return 1
+
+    print("ALL PHASE 1 FILES WITHIN STRICT ANTI-MONOLITH BUDGET!")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(check_files())
+

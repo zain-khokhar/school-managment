@@ -1,0 +1,155 @@
+/*
+ * base.css — Reset, body, typography, accessibility base
+ * tokens.css ko pehle load karo (index.html mein upar hona chahiye)
+ */
+
+/* ── Box Model Reset ──────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ── Root / Body ─────────────────────────────────────────────── */
+html {
+  font-size: var(--text-size);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-ui);
+  background-color: var(--kaghaz);
+  color: var(--siyahi);
+  line-height: var(--line-height);
+  overflow: hidden;         /* pywebview scrolls the content area, not body */
+  user-select: none;        /* desktop app — prevent accidental text selection */
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Allow text selection inside editable/input areas */
+input,
+textarea,
+select,
+[contenteditable] {
+  user-select: text;
+}
+
+/* ── Headings ────────────────────────────────────────────────── */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--siyahi);
+}
+
+h1 { font-size: 20px; }
+h2 { font-size: 17px; }
+h3 { font-size: 15px; }
+h4 { font-size: 14px; }
+
+/* ── Focus Ring (accessibility) ──────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--neel);
+  outline-offset: 2px;
+  border-radius: var(--radius-inner);
+}
+
+/* Remove outline on mouse click (not keyboard) */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ── Links ───────────────────────────────────────────────────── */
+a {
+  color: var(--neel);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* ── Tables base reset ───────────────────────────────────────── */
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+/* ── Lists reset ─────────────────────────────────────────────── */
+ul, ol {
+  list-style: none;
+}
+
+/* ── Images ──────────────────────────────────────────────────── */
+img {
+  display: block;
+  max-width: 100%;
+}
+
+/* ── Buttons reset ───────────────────────────────────────────── */
+button {
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* ── Inputs reset ────────────────────────────────────────────── */
+input,
+select,
+textarea {
+  font-family: inherit;
+  font-size: inherit;
+  color: var(--siyahi);
+}
+
+/* ── Numbers (all numeric data) ──────────────────────────────── */
+.num,
+td.num,
+th.num,
+.kpi-value,
+.badge-count {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* ── Urdu text blocks (bilingual toggle) ─────────────────────── */
+.urdu {
+  font-family: var(--font-urdu);
+  direction: rtl;
+  text-align: right;
+  font-size: 13px;
+  color: var(--siyahi-soft);
+  line-height: 1.8;
+}
+
+/* ── Visually hidden (screen reader only) ───────────────────── */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── Truncate long text ──────────────────────────────────────── */
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+

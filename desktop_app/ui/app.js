@@ -70,6 +70,10 @@
     try {
       const data = await apiCall("/api/bootstrap");
       state.data = data;
+      if (typeof window.ERP_ON_LEGACY_BOOTSTRAP === "function") {
+        window.ERP_ON_LEGACY_BOOTSTRAP(data);
+        return;
+      }
       updateSidebarPills();
       renderCurrentTab();
     } catch (err) {
@@ -103,6 +107,15 @@
   }
 
   function openModal(title, fieldsHtml, onSubmit) {
+    if (typeof window.ERP_BRIDGE_OPEN_MODAL === "function") {
+      window.ERP_BRIDGE_OPEN_MODAL(title, fieldsHtml, async () => {
+        const formEl = document.getElementById("modal-form");
+        const formData = new FormData(formEl);
+        await onSubmit(formData);
+        await loadBootstrap();
+      });
+      return;
+    }
     document.getElementById("modal-title").textContent = title;
     document.getElementById("modal-body").innerHTML = fieldsHtml;
     state.modalHandler = onSubmit;
@@ -1710,43 +1723,32 @@
   };
 
   // ---------------------------------------------------------------------------
-  // Event Listeners
   // ---------------------------------------------------------------------------
-  document.addEventListener("DOMContentLoaded", () => {
-    document.querySelectorAll("#nav-list .nav-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        document.querySelectorAll("#nav-list .nav-btn").forEach((b) => b.classList.remove("active"));
-        btn.classList.add("active");
-        state.tab = btn.dataset.tab;
-        renderCurrentTab();
-      });
-    });
-
-    document.getElementById("global-search").addEventListener("input", (e) => {
-      state.filter = e.target.value.trim();
-      renderCurrentTab();
-    });
-
-    document.getElementById("btn-refresh").addEventListener("click", () => {
-      loadBootstrap();
-    });
-
-    document.getElementById("modal-close").addEventListener("click", closeModal);
-    document.getElementById("modal-cancel").addEventListener("click", closeModal);
-    document.getElementById("modal-form").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      if (!state.modalHandler) return;
-      const formData = new FormData(e.target);
-      try {
-        await state.modalHandler(formData);
-        closeModal();
-        await loadBootstrap();
-      } catch (err) {
-        toast(err.message, "error");
+  // Strangler-Fig Legacy Bridge (Phase 1)
+  // Exposes legacy tab renderers & modal actions to the new ES module shell
+  // ---------------------------------------------------------------------------
+  window.ERP_LEGACY = {
+    setData(bootstrapData) {
+      state.data = bootstrapData;
+    },
+    renderTab(tabName, bootstrapData) {
+      if (bootstrapData) state.data = bootstrapData;
+      state.tab = tabName;
+      if (!state.data) {
+        return '<div class="panel"><div class="panel-body">Loading...</div></div>';
       }
-    });
-
-    loadBootstrap();
-  });
+      switch (tabName) {
+        case "dashboard":  return renderDashboard();
+        case "fees":       return renderFees();
+        case "assignment": return renderAssignment();
+        case "timetable":  return renderTimetable();
+        case "exam":       return renderExam();
+        case "library":    return renderLibrary();
+        case "event":      return renderEvent();
+        case "hostel":     return renderHostel();
+        case "transport":  return renderTransport();
+        default:           return renderDashboard();
+      }
+    },
+  };
 })();
-
