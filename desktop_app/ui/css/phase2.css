@@ -1,0 +1,291 @@
+/*
+ * phase2.css — Auth Gate, Role Dashboards, Student 360° & Settings
+ * Strictly uses "Kaghaz aur Siyahi" tokens (tokens.css). <= 260 lines.
+ */
+
+/* ═══════════════════════════════════════════════════════════════
+   AUTH / FIRST-RUN SETUP OVERLAY
+   ══════════════════════════════════════════════════════════════ */
+.auth-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  background: var(--kaghaz);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-6);
+  overflow-y: auto;
+}
+
+.auth-overlay.open {
+  display: flex;
+}
+
+.auth-card {
+  width: min(460px, 100%);
+  background: var(--surface);
+  border: 1px solid var(--rule-line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  padding: var(--sp-8);
+}
+
+.auth-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-6);
+  padding-bottom: var(--sp-4);
+  border-bottom: 1px solid var(--rule-line);
+}
+
+.auth-brand-mark {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-inner);
+  background: var(--sidebar);
+  color: var(--sidebar-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+.recovery-box {
+  background: var(--kaghaz);
+  border: 1px dashed var(--input-border);
+  border-radius: var(--radius);
+  padding: var(--sp-4);
+  margin: var(--sp-4) 0;
+  text-align: center;
+}
+
+.recovery-code-display {
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--siyahi);
+  margin: var(--sp-2) 0;
+  user-select: text;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TOPBAR BACKUP PILL & USER MENU
+   ══════════════════════════════════════════════════════════════ */
+.backup-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: var(--radius-inner);
+  border: 1px solid var(--rule-line);
+  background: var(--kaghaz);
+  color: var(--siyahi-soft);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color var(--t-fast), background-color var(--t-fast);
+}
+
+.backup-pill:hover {
+  border-color: var(--input-border);
+  color: var(--siyahi);
+}
+
+.backup-pill.stale {
+  background: var(--warn-bg);
+  color: var(--warn-text);
+  border-color: #EAD09C;
+}
+
+.user-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: var(--radius-inner);
+  border: 1px solid var(--rule-line);
+  background: var(--surface);
+  font-size: 12.5px;
+}
+
+.user-chip-role {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--siyahi-soft);
+  padding-left: 6px;
+  border-left: 1px solid var(--rule-line);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ONBOARDING CHECKLIST & EXCEPTION QUEUE (P4 / SET-1)
+   ══════════════════════════════════════════════════════════════ */
+.checklist-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+  gap: var(--sp-3);
+}
+
+.checklist-step {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  border: 1px solid var(--rule-line);
+  border-radius: var(--radius-inner);
+  background: var(--kaghaz);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--siyahi);
+  cursor: pointer;
+  text-align: left;
+}
+
+.checklist-step.done {
+  background: var(--surface);
+  color: var(--siyahi-soft);
+}
+
+.attention-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: 12px var(--sp-5);
+  border-bottom: 1px solid var(--rule-line);
+}
+
+.attention-row:last-child {
+  border-bottom: none;
+}
+
+.seat-bar-track {
+  flex: 1;
+  max-width: 88px;
+  height: 6px;
+  background: var(--rule-line);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.seat-bar-fill {
+  height: 100%;
+  background: var(--chai);
+}
+
+.seat-bar-fill.full {
+  background: var(--warn-text);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   STUDENT 360° PROFILE & SMART BUTTONS (S360-1..S360-8)
+   ══════════════════════════════════════════════════════════════ */
+.smart-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-5);
+}
+
+.smart-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--surface);
+  border: 1px solid var(--rule-line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-xs);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color var(--t-fast), box-shadow var(--t-fast);
+}
+
+.smart-btn:hover {
+  border-color: var(--input-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.smart-btn-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--siyahi-soft);
+}
+
+.smart-btn-val {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--siyahi);
+  font-variant-numeric: tabular-nums;
+}
+
+.smart-btn-sub {
+  font-size: 11.5px;
+  color: var(--siyahi-soft);
+}
+
+.s360-layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: var(--sp-5);
+  align-items: start;
+}
+
+.tab-bar {
+  display: flex;
+  gap: 2px;
+  padding: 0 var(--sp-4);
+  border-bottom: 1px solid var(--rule-line);
+  background: var(--kaghaz);
+  overflow-x: auto;
+}
+
+.tab-btn {
+  padding: 11px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--siyahi-soft);
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+}
+
+.tab-btn.active {
+  color: var(--siyahi);
+  border-bottom-color: var(--chai);
+  background: var(--surface);
+}
+
+.timeline-item {
+  padding: 10px var(--sp-4);
+  border-bottom: 1px solid var(--rule-line);
+  font-size: 12.5px;
+}
+
+.timeline-item:last-child { border-bottom: none; }
+
+.setting-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  padding: 12px 0;
+  border-bottom: 1px solid var(--rule-line);
+}
+
+.setting-toggle-row:last-child { border-bottom: none; }
+
+@media (max-width: 960px) {
+  .s360-layout { grid-template-columns: 1fr; }
+}
+

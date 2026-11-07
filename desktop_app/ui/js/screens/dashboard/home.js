@@ -1,223 +1,282 @@
 /**
- * dashboard/home.js — "Aaj Ka Din" Principal & Admin Command Center (Phase 1/2)
+ * screens/dashboard/home.js — Role-Aware "Aaj Ka Din" Command Center (Phase 2 — G9, P1..P7)
  *
- * Strictly uses "Kaghaz aur Siyahi" design tokens.
- * Gives immediate visibility into:
- *   1. 4 Actionable KPI Cards (Enrolled Students, Fee Collection vs Due, Today's Haziri %, Active Services)
- *   2. Quick Action Strip (1-click jump to Haziri, New Admission, Fee Vouchers)
- *   3. Class-Wise Seat & Attendance Overview Table
- *   4. Recent Fee Vouchers / Defaulters Snapshot
+ * Fetches `/api/dashboard/home` (< 500ms cached SQL aggregation).
+ * Dispatches Principal/Admin home directly and delegates Teacher, Fee Clerk,
+ * Front Desk, and Exam In-Charge homes to `role-homes.js`.
  */
 
-import { getBootstrap } from '../../core/state.js';
-import { esc } from '../../core/dom.js';
-import { formatPKR, formatDate, stateLabel, stateBadgeClass } from '../../core/format.js';
+import { apiGet, apiPost } from '../../core/api.js';
+import { set, get } from '../../core/state.js';
+import { esc, toast } from '../../core/dom.js';
+import { formatPKR, formatDateTime, stateLabel } from '../../core/format.js';
+import { icon } from '../../core/icons.js';
 import { navigateTo } from '../../core/router.js';
 import { openNewStudentModal } from '../school/student-modal.js';
+import { renderRoleHome, attachRoleHomeEvents } from './role-homes.js';
 
-export function renderDashboardScreen() {
-  const data = getBootstrap();
-  if (!data) {
-    return `
-      <div class="panel">
-        <div class="panel-body">
-          <div class="skeleton skeleton-title" style="width:200px"></div>
-          <div class="skeleton skeleton-row" style="margin-top:16px"></div>
-        </div>
-      </div>`;
+export async function renderDashboardScreen() {
+  const payload = await apiGet('/api/dashboard/home');
+  if (payload.backup_health) {
+    set({ backupHealth: payload.backup_health });
+    window.ERP?.refreshTopbarStatus?.();
   }
 
-  const k          = data.kpis || {};
-  const classes    = data.school?.standards || [];
-  const dailyAtt   = data.attendance?.daily || [];
-  const payslips   = data.fees?.payslips    || [];
-  const schoolName = data.school?.schools?.[0]?.name || 'School ERP';
-  const curYear    = (data.school?.years || []).find(y => y.current)?.name || 'Current Session';
+  const eff = payload.role || payload.effective_role || 'principal';
+  if (eff !== 'principal') {
+    const html = renderRoleHome(eff, payload);
+    setTimeout(() => attachRoleHomeEvents(eff), 20);
+    return html;
+  }
 
-  const todayIso = new Date().toISOString().split('T')[0];
-  const todayAtt = dailyAtt.filter(a => a.date === todayIso);
-  const totalPres = todayAtt.reduce((acc, a) => acc + (a.total_presence || 0), 0);
-  const totalStud = todayAtt.reduce((acc, a) => acc + (a.total_student || 0), 0);
-  const attPct    = totalStud > 0 ? Math.round((totalPres / totalStud) * 100) : null;
+  const html = _buildPrincipalHomeHtml(payload);
+  setTimeout(_attachPrincipalEvents, 20);
+  return html;
+}
 
-  const todayFormatted = new Date().toLocaleDateString('en-PK', {
+function _buildPrincipalHomeHtml(d) {
+  const cards = d.cards || {};
+  const c     = cards.today_collection || d.collection || {};
+  const att   = cards.today_attendance || d.attendance || {};
+  const due   = cards.fee_dues || d.fee_dues || {};
+  const enr   = cards.enrollment || {};
+  const chk   = d.checklist || null;
+  const schoolName = get('schoolName') || 'School ERP';
+  const curYear    = get('currentYear')?.name || 'Current Session';
+  const todayLabel = new Date().toLocaleDateString('en-PK', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   });
 
-  const classRows = classes.map(cls => {
-    const att = todayAtt.find(a => a.standard_id === cls.id);
-    const enrolled = cls.total_students ?? 0;
-    const cap      = cls.capacity ?? 35;
-    const free     = cls.remaining_seats ?? Math.max(0, cap - enrolled);
-    const fillPct  = cap > 0 ? Math.min(100, Math.round((enrolled / cap) * 100)) : 0;
+  const chkDone  = chk ? (chk.completed ?? chk.completed_count ?? 0) : 0;
+  const chkTotal = chk ? (chk.total ?? chk.total_count ?? 5) : 5;
+  const checklistBanner = chk && !chk.dismissed && chkDone < chkTotal ? `
+    <div class="panel">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">School Setup Checklist (${chkDone}/${chkTotal} Completed)</div>
+          <div class="panel-subtitle">Complete initial setup steps so daily operations run smoothly</div>
+        </div>
+        <button class="btn btn-secondary btn-sm" data-dash-goto="settings">Open Settings</button>
+      </div>
+      <div class="panel-body">
+        <div class="checklist-strip">
+          ${(chk.steps || []).map(s => `
+            <button type="button" class="checklist-step ${s.done ? 'done' : ''}" data-dash-goto="${esc(s.target_tab || s.tab || 'settings')}">
+              <span>${icon(s.done ? 'check' : 'arrow-right', 15)}</span>
+              <span class="truncate">${esc(s.title || s.label)}</span>
+            </button>`).join('')}
+        </div>
+      </div>
+    </div>` : '';
 
-    let attBadge = `<span class="badge badge-warn">Pending Today</span>`;
-    if (att) {
-      attBadge = `<span class="badge ${att.state === 'validate' ? 'badge-success' : 'badge-info'}">
-        ${esc(att.total_presence)}/${esc(att.total_student)} Hazir (${esc(stateLabel(att.state))})
-      </span>`;
-    }
+  const attentionItems = (d.attention_items || []).map(item => `
+    <div class="attention-row">
+      <div>
+        <div style="font-weight:600; font-size:13.5px; color:var(--siyahi);">${esc(item.title)}</div>
+        <div style="font-size:12px; color:var(--siyahi-soft);">${esc(item.detail || item.sub || '')}</div>
+      </div>
+      <div style="display:flex; gap:6px; align-items:center;">
+        <span class="badge ${item.severity === 'warn' ? 'badge-warn' : 'badge-neutral'}">
+          ${item.severity === 'warn' ? 'Action Needed' : 'Notice'}
+        </span>
+        ${item.type === 'backup_stale' || item.type === 'backup_overdue'
+          ? `<button class="btn btn-xs btn-primary" id="dash-quick-backup">${icon('database', 13)} Backup Now</button>`
+          : `<button class="btn btn-xs btn-secondary" data-dash-goto="${esc(item.action_tab || 'dashboard')}">${esc(item.action_label || 'Open')}</button>`}
+      </div>
+    </div>`).join('');
+
+  const leaveRows = (d.pending_leaves || []).map(lv => `
+    <div class="attention-row">
+      <div>
+        <div style="font-weight:600;">${esc(lv.student_name)} ${esc(lv.last || '')} <span style="font-weight:400; color:var(--siyahi-soft);">(${esc(lv.class_name || '—')})</span></div>
+        <div style="font-size:12px; color:var(--siyahi-soft);">${esc(lv.start_date)} to ${esc(lv.end_date)} (${esc(lv.days)}d) — ${esc(lv.reason || 'Leave request')}</div>
+      </div>
+      <div style="display:flex; gap:6px;">
+        <button class="btn btn-xs btn-primary" data-leave-id="${esc(lv.id)}" data-leave-act="approve">Approve</button>
+        <button class="btn btn-xs btn-secondary" data-leave-id="${esc(lv.id)}" data-leave-act="reject">Reject</button>
+      </div>
+    </div>`).join('');
+
+  const classRows = (d.class_strip || []).map(cls => {
+    const cid  = cls.id ?? cls.class_id;
+    const name = cls.name || cls.class_name;
+    const cap  = cls.capacity || 35;
+    const cnt  = cls.total_students ?? cls.enrolled ?? 0;
+    const free = Math.max(0, cap - cnt);
+    const fill = Math.min(100, Math.round((cnt / cap) * 100));
+    const marked = Boolean(cls.att_id);
+    const pres = cls.att_present ?? cls.present ?? 0;
+    const tot  = cls.att_total ?? cls.total_student ?? 0;
+    const attChip = marked
+      ? `<span class="badge ${cls.att_state === 'validate' ? 'badge-info' : 'badge-neutral'}">${esc(pres)}/${esc(tot)} (${esc(stateLabel(cls.att_state))})</span>`
+      : `<span class="badge badge-warn">Unmarked</span>`;
 
     return `
       <tr>
-        <td style="font-weight:600;">${esc(cls.name)}</td>
-        <td>${esc(cls.teacher_name || 'Assigned Faculty')}</td>
-        <td class="num">${esc(enrolled)} / ${esc(cap)}</td>
+        <td style="font-weight:600;">${esc(name)}</td>
+        <td>${esc(cls.teacher_name || 'Unassigned')}</td>
+        <td class="num">${esc(cnt)} / ${esc(cap)}</td>
         <td>
           <div style="display:flex; align-items:center; gap:8px;">
-            <div style="flex:1; height:7px; background:var(--rule-line); border-radius:99px; overflow:hidden; max-width:90px;">
-              <div style="width:${fillPct}%; height:100%; background:${free === 0 ? 'var(--surkh)' : 'var(--pista-text)'};"></div>
-            </div>
+            <div class="seat-bar-track"><div class="seat-bar-fill ${free === 0 ? 'full' : ''}" style="width:${fill}%"></div></div>
             <span class="num" style="font-size:12px; color:var(--siyahi-soft);">${esc(free)} free</span>
           </div>
         </td>
-        <td>${attBadge}</td>
+        <td>${attChip}</td>
         <td>
-          <button class="btn btn-xs btn-secondary" data-dash-goto="attendance">
-            Haziri →
+          <button class="btn btn-xs btn-secondary" data-open-haziri-class="${esc(cid)}">
+            Haziri ${icon('arrow-right', 12)}
           </button>
         </td>
       </tr>`;
   }).join('');
 
-  const recentSlips = payslips.slice(0, 6).map(p => `
-    <tr>
-      <td class="num" style="font-size:12px; color:var(--siyahi-soft);">${esc(p.number || '—')}</td>
-      <td style="font-weight:500;">${esc(p.student_name)}</td>
-      <td class="num" style="font-weight:600;">${esc(formatPKR(p.total))}</td>
-      <td class="num" style="color:${p.due_amount > 0 ? 'var(--surkh)' : 'var(--pista-text)'}; font-weight:600;">
-        ${esc(formatPKR(p.due_amount))}
-      </td>
-      <td><span class="badge ${stateBadgeClass(p.state)}">${esc(stateLabel(p.state))}</span></td>
-    </tr>`).join('');
-
-  setTimeout(_attachDashboardEvents, 20);
+  const activityRows = (d.recent_activity || []).slice(0, 8).map(a => `
+    <div class="timeline-item">
+      <div style="font-weight:500; color:var(--siyahi);">${esc(a.summary)}</div>
+      <div style="font-size:11.5px; color:var(--siyahi-soft); margin-top:2px;">
+        ${esc(a.username)} (${esc(a.role)}) • ${esc(formatDateTime(a.created_at))}
+      </div>
+    </div>`).join('');
 
   return `
-    <!-- Top Welcome & Quick Actions Banner -->
     <div class="page-header">
       <div class="page-header-info">
         <div class="page-header-title">Aaj Ka Din — ${esc(schoolName)}</div>
-        <div class="page-header-desc">${esc(todayFormatted)} • ${esc(curYear)}</div>
+        <div class="page-header-desc">${esc(todayLabel)} • ${esc(curYear)}</div>
       </div>
       <div class="page-header-actions">
-        <button class="btn btn-secondary" id="dash-btn-haziri">📋 Haziri Lagayein</button>
-        <button class="btn btn-secondary" id="dash-btn-fees">💰 Fee Counter</button>
-        <button class="btn btn-primary" id="dash-btn-admit">+ Naya Admission</button>
+        <button class="btn btn-secondary" data-dash-goto="attendance">${icon('attendance', 15)} Mark Attendance</button>
+        <button class="btn btn-secondary" data-dash-goto="fees">${icon('fees', 15)} Fee Counter</button>
+        <button class="btn btn-primary" id="dash-btn-admit">${icon('plus', 15)} New Admission</button>
       </div>
     </div>
 
-    <!-- 4 Enterprise KPI Cards -->
+    ${checklistBanner}
+
+    <!-- P1, P2, P3, Campus Summary — Calm Ink Numbers (Zero Red/Green Slop) -->
     <div class="kpi-grid">
-      <div class="kpi-card clickable" data-dash-goto="school" style="cursor:pointer;">
-        <div class="kpi-label">Active Enrolled Students</div>
-        <div class="kpi-value num">${esc(k.active_students ?? 0)}</div>
-        <div class="kpi-sub">${esc(k.classes ?? classes.length)} Active Classes • ${esc(k.teachers ?? 0)} Teachers</div>
+      <div class="kpi-card clickable" data-dash-goto="fees" style="cursor:pointer;">
+        <div class="kpi-label">Today's Fee Collection (P1)</div>
+        <div class="kpi-value num">${esc(formatPKR(c.amount ?? c.today_amount ?? 0))}</div>
+        <div class="kpi-sub">${esc(c.receipts ?? c.today_receipts ?? 0)} receipts today • Yesterday: ${esc(formatPKR(c.yesterday_amount || 0))}</div>
       </div>
 
       <div class="kpi-card clickable" data-dash-goto="attendance" style="cursor:pointer;">
-        <div class="kpi-label">Aaj Ki Haziri (Attendance)</div>
-        <div class="kpi-value num">${attPct !== null ? `${attPct}%` : 'Pending'}</div>
-        <div class="kpi-sub">
-          ${todayAtt.length > 0
-            ? `${todayAtt.length}/${classes.length} classes marked (${totalPres}/${totalStud} hazir)`
-            : 'Click karein aaj ki haziri shuru karne ke liye'}
-        </div>
+        <div class="kpi-label">Today's Attendance (P2)</div>
+        <div class="kpi-value num">${att.pct !== null && att.pct !== undefined ? `${att.pct}%` : 'Not Started'}</div>
+        <div class="kpi-sub">${esc(att.marked_classes || 0)}/${esc(att.total_classes || 0)} classes marked • ${esc(att.unmarked_classes || 0)} pending</div>
       </div>
 
       <div class="kpi-card clickable" data-dash-goto="fees" style="cursor:pointer;">
-        <div class="kpi-label">Fee Wasooli (Collected)</div>
-        <div class="kpi-value num" style="color:var(--pista-text);">${esc(formatPKR(k.fees_collected ?? 0))}</div>
-        <div class="kpi-sub" style="color:${(k.fees_due ?? 0) > 0 ? 'var(--surkh)' : 'var(--siyahi-soft)'};">
-          Baaqaya (Due): ${esc(formatPKR(k.fees_due ?? 0))}
-        </div>
+        <div class="kpi-label">Outstanding Fee Dues (P3)</div>
+        <div class="kpi-value num">${esc(formatPKR(due.total_due || 0))}</div>
+        <div class="kpi-sub">${esc(due.students_count ?? due.student_count ?? 0)} students (${esc(due.overdue_30d_count || 0)} over 30 days)</div>
       </div>
 
-      <div class="kpi-card clickable" data-dash-goto="library" style="cursor:pointer;">
-        <div class="kpi-label">Campus Services</div>
-        <div class="kpi-value num">${esc(k.available_books ?? 0)} Books</div>
-        <div class="kpi-sub">${esc(k.hostel_residents ?? 0)} Hostel • ${esc(k.transport_participants ?? 0)} Bus Riders</div>
+      <div class="kpi-card clickable" data-dash-goto="school" style="cursor:pointer;">
+        <div class="kpi-label">Active Enrollment</div>
+        <div class="kpi-value num">${esc(enr.enrolled ?? d.active_students ?? 0)}</div>
+        <div class="kpi-sub">${esc(att.total_classes || 0)} active classes in session</div>
       </div>
     </div>
 
-    <!-- Two-Column Workspace: Class Overview & Fee Snapshot -->
-    <div style="display:grid; grid-template-columns: 1.35fr 1fr; gap:var(--sp-5); align-items:start;">
-
-      <!-- Left: Class-Wise Seat & Today's Attendance Status -->
-      <div class="panel">
-        <div class="panel-header">
-          <div>
-            <div class="panel-title">Classes, Seat Capacity &amp; Aaj Ki Haziri</div>
-            <div class="panel-subtitle">Har class ki enrollment aur rozana haziri ki haalat</div>
+    <div style="display:grid; grid-template-columns: 1.45fr 1fr; gap:var(--sp-5); align-items:start;">
+      <div>
+        <!-- P4: Exceptions & Pending Approvals -->
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">Attention Required (Tawajjo Talab)</div>
+              <div class="panel-subtitle">Exceptions, unmarked attendance &amp; pending leave approvals</div>
+            </div>
           </div>
-          <div class="panel-toolbar">
-            <button class="btn btn-secondary btn-sm" data-dash-goto="school">Tamam Students →</button>
+          <div>
+            ${attentionItems || leaveRows
+              ? `${attentionItems}${leaveRows}`
+              : `<div class="panel-body" style="color:var(--siyahi-soft); font-size:13.5px;">${icon('check', 16)} All daily operations are on track today.</div>`}
           </div>
         </div>
-        <div class="table-wrap">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Class</th>
-                <th>Class Teacher</th>
-                <th class="num">Enrolled</th>
-                <th>Seat Meter</th>
-                <th>Today's Haziri</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${classRows || `<tr><td colspan="6" style="text-align:center; padding:24px;">Koi class mojood nahi</td></tr>`}
-            </tbody>
-          </table>
+
+        <!-- P5: Class-Wise Attendance & Capacity -->
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">Class-Wise Attendance &amp; Seat Capacity</div>
+              <div class="panel-subtitle">Click Haziri to open any class roll-call sheet directly</div>
+            </div>
+            <button class="btn btn-secondary btn-sm" data-dash-goto="school">All Students</button>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Class</th><th>Teacher</th><th class="num">Enrolled</th>
+                  <th>Capacity</th><th>Today's Roll Call</th><th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${classRows || `<tr><td colspan="6" style="text-align:center; padding:24px;">No classes configured</td></tr>`}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
-      <!-- Right: Recent Fee Challans & Defaulters -->
+      <!-- P7: Audit Trail Feed -->
       <div class="panel">
         <div class="panel-header">
           <div>
-            <div class="panel-title">Recent Fee Vouchers &amp; Baaqaya</div>
-            <div class="panel-subtitle">Taza fee challans aur wasooli status</div>
+            <div class="panel-title">Recent Staff Activity</div>
+            <div class="panel-subtitle">Append-only audit log across modules</div>
           </div>
-          <div class="panel-toolbar">
-            <button class="btn btn-secondary btn-sm" data-dash-goto="fees">Fee Counter →</button>
-          </div>
+          <button class="btn btn-ghost btn-sm" data-dash-goto="settings">Full Log</button>
         </div>
-        <div class="table-wrap">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Challan #</th>
-                <th>Student</th>
-                <th class="num">Total</th>
-                <th class="num">Baaqaya</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${recentSlips || `<tr><td colspan="5" style="text-align:center; padding:24px;">Koi fee voucher nahi bana</td></tr>`}
-            </tbody>
-          </table>
+        <div>
+          ${activityRows || `<div class="panel-body" style="color:var(--siyahi-soft); font-size:13px;">No recorded actions yet today.</div>`}
         </div>
       </div>
-
-    </div>
-  `;
+    </div>`;
 }
 
-function _attachDashboardEvents() {
-  document.getElementById('dash-btn-haziri')?.addEventListener('click', () => navigateTo('attendance'));
-  document.getElementById('dash-btn-fees')?.addEventListener('click', () => navigateTo('fees'));
+function _attachPrincipalEvents() {
   document.getElementById('dash-btn-admit')?.addEventListener('click', () => {
-    openNewStudentModal(() => window.location.reload());
+    openNewStudentModal(() => navigateTo('dashboard'));
   });
-
+  document.getElementById('dash-quick-backup')?.addEventListener('click', async e => {
+    const btn = e.currentTarget;
+    btn.disabled = true;
+    try {
+      await apiPost('/api/settings/backup', { note: 'Principal 1-click dashboard backup' });
+      toast('Database backup completed and verified', 'success');
+      navigateTo('dashboard');
+    } catch (err) {
+      toast(err.message, 'error');
+      btn.disabled = false;
+    }
+  });
   document.querySelectorAll('[data-dash-goto]').forEach(el => {
-    el.addEventListener('click', () => {
-      const target = el.getAttribute('data-dash-goto');
-      if (target) navigateTo(target);
+    el.addEventListener('click', () => navigateTo(el.getAttribute('data-dash-goto')));
+  });
+  document.querySelectorAll('[data-open-haziri-class]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const cid = parseInt(btn.getAttribute('data-open-haziri-class'), 10);
+      navigateTo('attendance', { selectedClassId: cid });
+    });
+  });
+  document.querySelectorAll('[data-leave-id]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id  = parseInt(btn.getAttribute('data-leave-id'), 10);
+      const act = btn.getAttribute('data-leave-act');
+      btn.disabled = true;
+      try {
+        await apiPost(`/api/attendance/leaves/${id}/action`, { action: act });
+        toast(`Leave request ${act}d`, 'success');
+        navigateTo('dashboard');
+      } catch (err) {
+        toast(err.message, 'error');
+        btn.disabled = false;
+      }
     });
   });
 }
-

@@ -1,14 +1,14 @@
 /**
- * attendance/daily-sheet.js — Haziri Controller & State (Phase 1, G1 Fix)
+ * attendance/daily-sheet.js — Roll-Call Controller & State (Phase 1/2, G1 Fix)
  *
- * Flow: Class select → "Haziri Shuru Karein" → roll call grid → Jama Karein
- * Before: teacher haziri mark kar hi nahi sakta tha (no route existed)
- * After:  40 bachon ki haziri < 60 seconds mein (~5 clicks)
+ * Supports pre-selecting a class (`get('selectedClassId')`) when launched from
+ * Principal or Teacher "Aaj Ka Din" home in 1 click. Zero Unicode emojis.
  */
 
 import { apiGet, apiPost } from '../../core/api.js';
-import { getBootstrap } from '../../core/state.js';
+import { getBootstrap, get, set } from '../../core/state.js';
 import { esc, toast } from '../../core/dom.js';
+import { icon } from '../../core/icons.js';
 import { buildAttendanceShellHtml, buildSheetHtml } from './daily-sheet-view.js';
 
 let _attState = {
@@ -24,10 +24,6 @@ let _attState = {
 
 let _undoStack = [];
 
-/**
- * Attendance screen render karo
- * @returns {Promise<string>} HTML
- */
 export async function renderAttendanceScreen() {
   const data = getBootstrap();
   const classes = data?.school?.standards || [];
@@ -41,12 +37,9 @@ export async function renderAttendanceScreen() {
   return buildAttendanceShellHtml(classes);
 }
 
-/**
- * Attach top-level class selector events
- */
 export function attachAttendanceEvents() {
   const selectEl = document.getElementById('att-class-select');
-  const loadBtn = document.getElementById('att-load-btn');
+  const loadBtn  = document.getElementById('att-load-btn');
   if (!selectEl || !loadBtn) return;
 
   selectEl.addEventListener('change', () => {
@@ -56,12 +49,26 @@ export function attachAttendanceEvents() {
   loadBtn.addEventListener('click', async () => {
     const classId = parseInt(selectEl.value, 10);
     if (!classId) return;
-    const data = getBootstrap();
-    const cls = (data?.school?.standards || []).find(c => c.id === classId);
-    _attState.classId = classId;
-    _attState.className = cls?.name || `Class ${classId}`;
-    await _loadOrCreateAttendance(classId);
+    await _selectAndLoadClass(classId);
   });
+
+  const preselected = get('selectedClassId');
+  if (preselected) {
+    set({ selectedClassId: null });
+    selectEl.value = String(preselected);
+    loadBtn.disabled = !selectEl.value;
+    if (selectEl.value) {
+      _selectAndLoadClass(parseInt(selectEl.value, 10));
+    }
+  }
+}
+
+async function _selectAndLoadClass(classId) {
+  const data = getBootstrap();
+  const cls = (data?.school?.standards || []).find(c => c.id === classId);
+  _attState.classId = classId;
+  _attState.className = cls?.name || `Class ${classId}`;
+  await _loadOrCreateAttendance(classId);
 }
 
 async function _loadOrCreateAttendance(classId) {
@@ -81,24 +88,23 @@ async function _loadOrCreateAttendance(classId) {
     if (res.attendance) {
       _populateSheet(res.attendance);
     } else {
-        await apiPost('/api/attendance/daily', {
-          standard_id: classId,
-          user_id: null,
-          date: new Date().toISOString().split('T')[0],
-        });
-        const fresh = await apiGet(`/api/attendance/today/${classId}`);
-        _populateSheet(fresh.attendance);
+      await apiPost('/api/attendance/daily', {
+        standard_id: classId,
+        user_id: null,
+        date: new Date().toISOString().split('T')[0],
+      });
+      const fresh = await apiGet(`/api/attendance/today/${classId}`);
+      _populateSheet(fresh.attendance);
     }
   } catch (err) {
     container.innerHTML = `
       <div class="empty-state">
-        <div class="empty-state-icon">⚠️</div>
-        <div class="empty-state-title">Haziri load nahi ho saki</div>
+        <div class="empty-state-icon">${icon('alert', 40)}</div>
+        <div class="empty-state-title">Unable to load attendance sheet</div>
         <div class="empty-state-desc">${esc(err.message)}</div>
-        <button class="btn btn-secondary" onclick="window.ERP.reloadAttendance(${classId})">
-          Dobara Try Karein
-        </button>
+        <button class="btn btn-secondary" id="att-retry-btn">Retry</button>
       </div>`;
+    document.getElementById('att-retry-btn')?.addEventListener('click', () => _loadOrCreateAttendance(classId));
   }
 }
 
@@ -119,10 +125,10 @@ function _populateSheet(att) {
 }
 
 function _attachSheetEvents() {
-  const rollList = document.getElementById('att-roll-list');
-  const submitBtn = document.getElementById('att-submit-btn');
-  const undoBtn = document.getElementById('att-undo-btn');
-  const draftBtn = document.getElementById('att-draft-btn');
+  const rollList      = document.getElementById('att-roll-list');
+  const submitBtn     = document.getElementById('att-submit-btn');
+  const undoBtn       = document.getElementById('att-undo-btn');
+  const draftBtn      = document.getElementById('att-draft-btn');
   const allPresentBtn = document.getElementById('att-mark-all-present');
 
   rollList?.addEventListener('click', e => {
@@ -161,7 +167,7 @@ function _attachSheetEvents() {
   draftBtn?.addEventListener('click', async () => {
     try {
       await apiPost(`/api/attendance/daily/${_attState.attId}/action`, { action: 'draft' });
-      toast('Haziri draft mein wapis aa gayi', 'info');
+      toast('Roll call reopened for editing', 'info');
       await _loadOrCreateAttendance(_attState.classId);
     } catch (err) {
       toast(err.message, 'error');
@@ -191,7 +197,7 @@ function _toggleLine(lineId, makeAbsent) {
 
 function _refreshStats() {
   const present = _attState.lines.filter(l => l.is_present).length;
-  const absent = _attState.lines.filter(l => l.is_absent).length;
+  const absent  = _attState.lines.filter(l => l.is_absent).length;
   const changed = _attState.modified.size;
 
   const setTxt = (id, val) => {
@@ -228,7 +234,7 @@ async function _submitAttendance() {
   const submitBtn = document.getElementById('att-submit-btn');
   if (submitBtn) {
     submitBtn.disabled = true;
-    submitBtn.textContent = '⏳ Jama ho raha hai...';
+    submitBtn.textContent = 'Submitting...';
   }
 
   try {
@@ -240,10 +246,10 @@ async function _submitAttendance() {
     await apiPost(`/api/attendance/daily/${_attState.attId}/bulk-mark`, { lines });
     await apiPost(`/api/attendance/daily/${_attState.attId}/action`, { action: 'validate' });
 
-    const absent = lines.filter(l => l.is_absent).length;
+    const absent  = lines.filter(l => l.is_absent).length;
     const present = lines.length - absent;
 
-    toast(`✓ Haziri jama ho gayi — ${present} hazir, ${absent} ghair-hazir`, 'success', { duration: 5000 });
+    toast(`Attendance saved — ${present} Present, ${absent} Absent`, 'success', { duration: 5000 });
     await _loadOrCreateAttendance(_attState.classId);
   } catch (err) {
     toast(err.message, 'error');
@@ -251,7 +257,7 @@ async function _submitAttendance() {
     _attState.submitting = false;
     if (submitBtn) {
       submitBtn.disabled = false;
-      submitBtn.textContent = '✓ Haziri Jama Karein';
+      submitBtn.innerHTML = `${icon('check', 15)} Submit Roll Call`;
     }
   }
 }

@@ -8,6 +8,7 @@ import socket
 import sys
 import threading
 import time
+import urllib.error
 import urllib.request
 import webbrowser
 
@@ -52,16 +53,29 @@ def wait_for_server(url: str, timeout: float = 10.0) -> bool:
     return False
 
 
-def run_self_test(base_url: str) -> int:
-    """Verify live HTTP server, SQLite WAL database, 10-module bootstrap, and UI HTML."""
+def run_self_test(base_url: str, db: Database) -> int:
+    """Verify live HTTP server, SQLite WAL integrity, Phase 2 auth gate, and UI HTML."""
     with urllib.request.urlopen(f"{base_url}/api/health", timeout=5.0) as resp:
         health = json.loads(resp.read().decode("utf-8"))
         assert health.get("ok") is True, f"Health check failed: {health}"
 
-    with urllib.request.urlopen(f"{base_url}/api/bootstrap", timeout=5.0) as resp:
-        boot = json.loads(resp.read().decode("utf-8"))
-        assert boot.get("ok") is True, "Bootstrap failed"
-        assert boot["kpis"]["active_students"] >= 1, "Seeded students missing"
+    with urllib.request.urlopen(f"{base_url}/api/auth/status", timeout=5.0) as resp:
+        auth_st = json.loads(resp.read().decode("utf-8"))
+        assert auth_st.get("ok") is True, "Auth status failed"
+        assert auth_st.get("auth_enforced") is True, "Auth enforcement must be active"
+
+    # Unauthenticated /api/bootstrap must be blocked with HTTP 401
+    try:
+        urllib.request.urlopen(f"{base_url}/api/bootstrap", timeout=5.0)
+        raise AssertionError("Expected HTTP 401 on unauthenticated /api/bootstrap")
+    except urllib.error.HTTPError as err:
+        assert err.code == 401, f"Expected 401, got {err.code}"
+
+    # Verify DB integrity & seeded data directly
+    integ = db.fetch_one("PRAGMA integrity_check")
+    assert integ and str(list(integ.values())[0]).lower() == "ok", "SQLite integrity failed"
+    stu_cnt = db.fetch_one("SELECT COUNT(*) AS c FROM student_student WHERE active = 1")["c"]
+    assert int(stu_cnt) >= 1, "Seeded students missing"
 
     with urllib.request.urlopen(f"{base_url}/", timeout=5.0) as resp:
         html = resp.read().decode("utf-8")
@@ -71,8 +85,9 @@ def run_self_test(base_url: str) -> int:
         json.dumps(
             {
                 "self_test": "PASSED",
-                "db_path": health.get("db_path"),
-                "kpis": boot.get("kpis"),
+                "db_name": health.get("db_name"),
+                "auth_enforced": True,
+                "active_students": int(stu_cnt),
             }
         )
     )
@@ -95,7 +110,7 @@ def main() -> int:
     args = parser.parse_args()
 
     db = Database(get_default_db_path())
-    app = create_app(db, seed=True)
+    app = create_app(db, seed=True, enforce_auth=True)
     port = args.port or find_free_port()
     base_url = f"http://127.0.0.1:{port}"
 
@@ -107,7 +122,7 @@ def main() -> int:
         return 1
 
     if args.self_test:
-        rc = run_self_test(base_url)
+        rc = run_self_test(base_url, db)
         srv.shutdown()
         return rc
 

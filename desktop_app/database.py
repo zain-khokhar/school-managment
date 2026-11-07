@@ -8,6 +8,8 @@ import sqlite3
 import sys
 from typing import Any, Iterator
 
+from desktop_app.db.migrate import apply_migrations
+
 
 def get_default_db_path() -> Path:
     """Resolve persistent SQLite database path for both source and PyInstaller .exe runs."""
@@ -918,6 +920,7 @@ class Database:
                     """,
                     (code, prefix, padding),
                 )
+            apply_migrations(conn)
 
     def next_by_code(self, code: str, conn: sqlite3.Connection | None = None) -> str:
         """Generate next sequence string for a given Odoo sequence code."""

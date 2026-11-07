@@ -1,26 +1,21 @@
 /**
- * attendance/daily-sheet-view.js — Pure HTML Builders for Haziri Screen (Phase 1)
+ * attendance/daily-sheet-view.js — Pure HTML Builders for Haziri Screen (Phase 1/2)
  *
- * Separated from daily-sheet.js to keep every JS module under 250 lines.
- * Uses only "Kaghaz aur Siyahi" design tokens.
+ * Uses geometric stroke SVG icons (core/icons.js) and calm paper/ink roll-call styling.
  */
 
 import { esc } from '../../core/dom.js';
 import { formatDate } from '../../core/format.js';
+import { icon } from '../../core/icons.js';
 
-/**
- * Build initial Attendance page shell with Class Selector
- * @param {Array<object>} classes
- * @returns {string}
- */
 export function buildAttendanceShellHtml(classes) {
   if (!classes.length) {
     return `
       <div class="empty-state">
-        <div class="empty-state-icon">📋</div>
-        <div class="empty-state-title">Koi Class nahi mili</div>
+        <div class="empty-state-icon">${icon('attendance', 42)}</div>
+        <div class="empty-state-title">No classes configured</div>
         <div class="empty-state-desc">
-          Pehle Students → Classes section mein jaayein aur classes banayein.
+          Configure classes under Students before taking daily attendance.
         </div>
       </div>`;
   }
@@ -36,30 +31,35 @@ export function buildAttendanceShellHtml(classes) {
   return `
     <div class="page-header">
       <div class="page-header-info">
-        <div class="page-header-title">📋 Daily Attendance (Haziri)</div>
+        <div class="page-header-title">Daily Attendance (Haziri)</div>
         <div class="page-header-desc">${esc(today)}</div>
+      </div>
+      <div class="page-header-actions">
+        <a class="btn btn-secondary btn-sm" href="/api/attendance/export-xlsx" target="_blank">
+          ${icon('download', 14)} Export 31-Day Sheet (.xlsx)
+        </a>
       </div>
     </div>
 
     <div class="panel" id="att-class-selector">
       <div class="panel-header">
-        <div class="panel-title">Class Select Karein</div>
+        <div class="panel-title">Select Class for Roll Call</div>
       </div>
       <div class="panel-body">
         <div style="display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap;">
           <div class="form-group" style="flex:1; min-width:200px; margin-bottom:0;">
             <label class="form-label required" for="att-class-select">Class</label>
             <select class="form-control" id="att-class-select">
-              <option value="">— Class chunein —</option>
+              <option value="">— Choose Class —</option>
               ${classOptions}
             </select>
           </div>
           <button class="btn btn-primary" id="att-load-btn" disabled>
-            Haziri Shuru Karein →
+            Open Roll Call ${icon('arrow-right', 14)}
           </button>
         </div>
         <p id="att-class-hint" class="form-hint" style="margin-top:8px;">
-          Default sab students Hazir hote hain — sirf Ghair-hazir students par tap karein aur Jama karein.
+          All students default to Present — tap only the Absent exceptions and submit.
         </p>
       </div>
     </div>
@@ -68,13 +68,6 @@ export function buildAttendanceShellHtml(classes) {
   `;
 }
 
-/**
- * Build the Roll-Call Sheet HTML
- * @param {object} att
- * @param {string} className
- * @param {Array<object>} lines
- * @returns {string}
- */
 export function buildSheetHtml(att, className, lines) {
   const isValidated = att.state === 'validate';
   const present = lines.filter(l => l.is_present).length;
@@ -91,10 +84,8 @@ export function buildSheetHtml(att, className, lines) {
         </div>
         <div class="panel-toolbar">
           ${isValidated
-            ? `<span class="badge badge-success">✓ Validated</span>
-               <button class="btn btn-secondary btn-sm" id="att-draft-btn">
-                 Reset to Draft
-               </button>`
+            ? `<span class="badge badge-info">${icon('check', 12)} Validated</span>
+               <button class="btn btn-secondary btn-sm" id="att-draft-btn">Reopen Sheet</button>`
             : `<span class="badge badge-warn">Draft • Roll Call Open</span>`}
         </div>
       </div>
@@ -102,55 +93,47 @@ export function buildSheetHtml(att, className, lines) {
       <div class="att-stats-bar">
         <div class="att-stat">
           <div class="att-stat-dot present"></div>
-          <span>Hazir: <strong id="att-count-present">${present}</strong></span>
+          <span>Present: <strong id="att-count-present" class="num">${present}</strong></span>
         </div>
         <div class="att-stat">
           <div class="att-stat-dot absent"></div>
-          <span>Ghair-hazir: <strong id="att-count-absent">${absent}</strong></span>
+          <span>Absent: <strong id="att-count-absent" class="num">${absent}</strong></span>
         </div>
         <div class="att-stat">
-          <span style="color:var(--siyahi-soft)">Kul: ${total}</span>
+          <span style="color:var(--siyahi-soft)">Total: <span class="num">${total}</span></span>
         </div>
         ${isValidated ? '' : `
           <div style="margin-left:auto;">
-            <button class="btn btn-secondary btn-sm" id="att-mark-all-present">
-              Sab Hazir
-            </button>
+            <button class="btn btn-secondary btn-sm" id="att-mark-all-present">Mark All Present</button>
           </div>`}
       </div>
 
       <div id="att-roll-list">
         ${rowsHtml || `
           <div class="empty-state" style="min-height:160px;">
-            <div class="empty-state-icon">👥</div>
-            <div class="empty-state-title">Is class mein koi student nahi</div>
-            <div class="empty-state-desc">Students tab mein jaayein aur students admit karein.</div>
+            <div class="empty-state-icon">${icon('users', 36)}</div>
+            <div class="empty-state-title">No enrolled students in this class</div>
+            <div class="empty-state-desc">Admit students into this class from the Students directory.</div>
           </div>`}
       </div>
 
       ${!isValidated && lines.length ? `
         <div class="att-action-bar">
           <div class="att-action-bar-info">
-            <span id="att-modified-count">0</span> tabdeeliyan —
-            <strong id="att-bar-absent">${absent}</strong> ghair-hazir
+            <span id="att-modified-count" class="num">0</span> changes —
+            <strong id="att-bar-absent" class="num">${absent}</strong> marked Absent
           </div>
           <button class="btn btn-secondary" id="att-undo-btn" disabled>
-            ↩ Undo
+            ${icon('undo', 14)} Undo
           </button>
           <button class="btn btn-primary" id="att-submit-btn">
-            ✓ Haziri Jama Karein
+            ${icon('check', 15)} Submit Roll Call
           </button>
         </div>` : ''}
     </div>
   `;
 }
 
-/**
- * Build a single student row in the roll-call grid
- * @param {object} line
- * @param {boolean} isValidated
- * @returns {string}
- */
 export function buildStudentRowHtml(line, isValidated) {
   const onLeave   = line.is_absent && !line.present_absentcheck;
   const isPresent = !!line.is_present;
@@ -166,9 +149,9 @@ export function buildStudentRowHtml(line, isValidated) {
         </div>
         <div class="att-student-sub">GR: ${esc(line.pid || '—')}</div>
       </div>
-      ${onLeave ? '<div class="att-leave-chip">Chhutti Approved</div>' : ''}
+      ${onLeave ? '<div class="att-leave-chip">Approved Leave</div>' : ''}
       <div class="att-toggle" role="group"
-           aria-label="Haziri: ${esc(line.student_name)}">
+           aria-label="Attendance: ${esc(line.student_name)}">
         <button
           type="button"
           class="att-toggle-btn present ${isPresent ? 'active' : ''}"
@@ -176,7 +159,7 @@ export function buildStudentRowHtml(line, isValidated) {
           data-line="${esc(line.id)}"
           ${isValidated ? 'disabled' : ''}
           aria-pressed="${isPresent}">
-          ✓ Hazir
+          ${icon('check', 13)} Present
         </button>
         <button
           type="button"
@@ -185,9 +168,8 @@ export function buildStudentRowHtml(line, isValidated) {
           data-line="${esc(line.id)}"
           ${isValidated ? 'disabled' : ''}
           aria-pressed="${isAbsent}">
-          ✗ Ghair-hazir
+          ${icon('x', 13)} Absent
         </button>
       </div>
     </div>`;
 }
-

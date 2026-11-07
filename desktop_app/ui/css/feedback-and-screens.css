@@ -190,7 +190,7 @@
   font-weight: 700;
   color: var(--siyahi-soft);
   flex-shrink: 0;
-  transition: all var(--t-normal);
+  transition: background-color var(--t-normal), border-color var(--t-normal), color var(--t-normal);
 }
 
 .wizard-step.active .wizard-step-circle {
@@ -259,7 +259,7 @@
   flex-shrink: 0;
 }
 
-.att-stat-dot.present  { background: var(--pista-text); }
+.att-stat-dot.present  { background: var(--siyahi-soft); }
 .att-stat-dot.absent   { background: var(--surkh); }
 .att-stat-dot.leave    { background: var(--warn-text); }
 
@@ -314,12 +314,16 @@
 }
 
 .att-toggle-btn {
+  min-height: 36px;
   padding: 6px 14px;
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   border: none;
-  transition: background var(--t-fast), color var(--t-fast);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background-color var(--t-fast), color var(--t-fast);
   user-select: none;
 }
 
@@ -328,9 +332,10 @@
   color: var(--siyahi-soft);
 }
 
+/* Calm paper/ink active state so 38 Present rows stay quiet; only Absent rows pop */
 .att-toggle-btn.present.active {
-  background: var(--pista-bg);
-  color: var(--pista-text);
+  background: var(--kaghaz);
+  color: var(--siyahi);
 }
 
 .att-toggle-btn.absent {

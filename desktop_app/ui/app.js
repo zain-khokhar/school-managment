@@ -35,12 +35,14 @@
 
   function badge(status) {
     const s = String(status || "").toLowerCase();
-    let cls = "badge-info";
-    if (["done", "paid", "confirm", "validate", "approve", "running", "available", "pass", "open", "active"].includes(s)) {
+    let cls = "badge-neutral";
+    if (["paid", "approve", "pass"].includes(s)) {
       cls = "badge-success";
-    } else if (["draft", "pending", "toapprove", "re-evaluation", "reissue", "reservation"].includes(s)) {
+    } else if (["done", "fees_received", "confirm", "validate", "running", "available", "open", "active"].includes(s)) {
+      cls = "badge-info";
+    } else if (["pending", "toapprove", "issue", "re-evaluation", "reissue", "reservation", "expire"].includes(s)) {
       cls = "badge-warn";
-    } else if (["cancel", "cancelled", "reject", "terminate", "fail", "fine", "lost", "notavailable", "expire", "close"].includes(s)) {
+    } else if (["cancel", "cancelled", "reject", "terminate", "fail", "fine", "lost"].includes(s)) {
       cls = "badge-danger";
     }
     return `<span class="badge ${cls}">${esc(status)}</span>`;
@@ -56,7 +58,11 @@
   }
 
   async function apiCall(url, method = "GET", body = null) {
-    const opts = { method, headers: { "Content-Type": "application/json" } };
+    const headers = { "Content-Type": "application/json" };
+    if (window.ERP_SESSION_TOKEN) {
+      headers["X-Session-Token"] = window.ERP_SESSION_TOKEN;
+    }
+    const opts = { method, headers, credentials: "same-origin" };
     if (body !== null) opts.body = JSON.stringify(body);
     const res = await fetch(url, opts);
     const json = await res.json();
@@ -419,7 +425,7 @@
           <div class="panel-title">Daily Attendance Roll Call &amp; 31-Day Monthly Matrix</div>
           <div class="panel-toolbar">
             <button class="btn btn-primary" onclick="window.ERP.openNewAttendanceModal()">+ New Daily Attendance</button>
-            <a class="btn" href="/api/attendance/export-xlsx" target="_blank">⬇ Export 31-Day Excel (.xlsx)</a>
+            <a class="btn btn-secondary" href="/api/attendance/export-xlsx" target="_blank">Export 31-Day Excel (.xlsx)</a>
           </div>
         </div>
         <div class="table-wrap">

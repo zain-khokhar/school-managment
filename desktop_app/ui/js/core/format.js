@@ -102,6 +102,19 @@ export function formatTime(iso) {
   return `${h}:${m} ${ampm}`;
 }
 
+/**
+ * ISO timestamp to compact date + time — "6 Nov 2026, 2:10 PM"
+ * @param {string|null} iso
+ * @returns {string}
+ */
+export function formatDateTime(iso) {
+  if (!iso) return '—';
+  const normalized = String(iso).includes('T') ? iso : String(iso).replace(' ', 'T') + 'Z';
+  const d = new Date(normalized);
+  if (isNaN(d)) return formatDate(iso);
+  return `${d.getDate()} ${MONTHS_EN[d.getMonth()]} ${d.getFullYear()}, ${formatTime(d.toISOString())}`;
+}
+
 // ─── Percentage ───────────────────────────────────────────────────────────────
 
 /**
@@ -134,30 +147,34 @@ export function fullName(student) {
 
 /** Backend state values ko human-readable English mein convert karo */
 const STATE_LABELS = {
-  draft:        'Draft',
-  done:         'Enrolled',
-  alumni:       'Alumni',
-  terminate:    'Terminated',
-  cancel:       'Cancelled',
-  paid:         'Paid',
-  confirm:      'Confirmed',
-  validate:     'Validated',
-  approve:      'Approved',
-  toapprove:    'Pending Approval',
-  reject:       'Rejected',
-  running:      'Active',
-  open:         'Open',
-  close:        'Closed',
-  active:       'Active',
-  inactive:     'Inactive',
-  available:    'Available',
-  notavailable: 'Not Available',
-  pass:         'Pass',
-  fail:         'Fail',
-  fine:         'Overdue Fine',
-  issue:        'Issued',
-  return:       'Returned',
-  expire:       'Expired',
+  draft:          'Draft',
+  done:           'Enrolled',
+  fees_received:  'Enrolled',
+  alumni:         'Alumni',
+  terminate:      'Terminated',
+  cancel:         'Cancelled',
+  cancelled:      'Cancelled',
+  paid:           'Paid',
+  confirm:        'Confirmed',
+  pending:        'Due',
+  validate:       'Validated',
+  approve:        'Approved',
+  toapprove:      'Pending Approval',
+  reject:         'Rejected',
+  running:        'Active',
+  open:           'Open',
+  close:          'Closed',
+  active:         'Active',
+  inactive:       'Inactive',
+  available:      'Available',
+  notavailable:   'Checked Out',
+  pass:           'Pass',
+  fail:           'Fail',
+  fine:           'Overdue Fine',
+  issue:          'Issued',
+  return:         'Returned',
+  expire:         'Expired',
+  're-evaluation':'Re-Eval',
 };
 
 /**
@@ -170,21 +187,27 @@ export function stateLabel(state) {
 }
 
 /**
- * State string ko badge class mein convert karo
+ * Calm Enterprise Badge Mapping (Section 9.2):
+ *   - badge-success: strictly financial settlement / approval / pass
+ *   - badge-info:    routine active operational states
+ *   - badge-warn:    action-required queues
+ *   - badge-danger:  true exceptions / rejections / fines
+ *   - badge-neutral: quiet draft / archival states
  * @param {string} state
  * @returns {'badge-success'|'badge-warn'|'badge-danger'|'badge-info'|'badge-neutral'}
  */
 export function stateBadgeClass(state) {
   const s = String(state || '').toLowerCase();
-  if (['done', 'paid', 'confirm', 'validate', 'approve', 'running',
-       'available', 'pass', 'open', 'active', 'return'].includes(s)) {
+  if (['paid', 'approve', 'pass'].includes(s)) {
     return 'badge-success';
   }
-  if (['draft', 'pending', 'toapprove', 'issue'].includes(s)) {
+  if (['done', 'fees_received', 'confirm', 'validate', 'running', 'open', 'active', 'available'].includes(s)) {
+    return 'badge-info';
+  }
+  if (['pending', 'toapprove', 'issue', 're-evaluation', 're-evaluation_confirm', 'expire'].includes(s)) {
     return 'badge-warn';
   }
-  if (['cancel', 'terminate', 'reject', 'fail', 'fine',
-       'notavailable', 'expire', 'close', 'alumni'].includes(s)) {
+  if (['cancel', 'cancelled', 'terminate', 'reject', 'fail', 'fine', 'lost'].includes(s)) {
     return 'badge-danger';
   }
   return 'badge-neutral';

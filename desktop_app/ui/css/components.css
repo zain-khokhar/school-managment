@@ -118,20 +118,21 @@
 .badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   font-size: 11.5px;
   font-weight: 600;
   padding: 2px 8px;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-inner);
   line-height: 1.4;
   white-space: nowrap;
+  border: 1px solid transparent;
 }
 
-.badge-success { background: var(--pista-bg);  color: var(--pista-text); }
-.badge-warn    { background: var(--warn-bg);   color: var(--warn-text);  }
-.badge-danger  { background: var(--danger-bg); color: var(--danger-text);}
-.badge-info    { background: var(--info-bg);   color: var(--info-text);  }
-.badge-neutral { background: var(--kaghaz);    color: var(--siyahi-soft);border: 1px solid var(--rule-line); }
+.badge-success { background: var(--pista-bg);  color: var(--pista-text); border-color: #C7DBB6; }
+.badge-warn    { background: var(--warn-bg);   color: var(--warn-text);  border-color: #EAD09C; }
+.badge-danger  { background: var(--danger-bg); color: var(--danger-text);border-color: #E8B7B4; }
+.badge-info    { background: var(--info-bg);   color: var(--info-text);  border-color: #BDD3E6; }
+.badge-neutral { background: var(--kaghaz);    color: var(--siyahi-soft);border-color: var(--rule-line); }
 
 /* Status dot inside badge */
 .badge-dot {

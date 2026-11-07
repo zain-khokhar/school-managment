@@ -25,7 +25,16 @@ from desktop_app.services.library_service import LibraryService
 from desktop_app.services.school_service import SchoolService
 from desktop_app.services.seed_service import ensure_seed_data
 import logging
+from desktop_app.routes.auth_routes import register_auth_routes
+from desktop_app.routes.dashboard_routes import register_dashboard_routes
 from desktop_app.routes.phase1_routes import register_phase1_routes
+from desktop_app.routes.rbac import register_rbac_and_audit
+from desktop_app.routes.settings_routes import register_settings_routes
+from desktop_app.services.audit_service import AuditService
+from desktop_app.services.auth_service import AuthService
+from desktop_app.services.backup_service import BackupService
+from desktop_app.services.dashboard_service import DashboardService
+from desktop_app.services.settings_service import SettingsService
 from desktop_app.services.timetable_service import TimetableService
 
 
@@ -36,7 +45,11 @@ def get_ui_dir() -> Path:
     return Path(__file__).resolve().parent / "ui"
 
 
-def create_app(db: Database | None = None, seed: bool = True) -> Flask:
+def create_app(
+    db: Database | None = None,
+    seed: bool = True,
+    enforce_auth: bool | None = None,
+) -> Flask:
     """Create and configure the local Flask application for the School Management Desktop App."""
     database = db or Database()
     if seed:
@@ -57,12 +70,30 @@ def create_app(db: Database | None = None, seed: bool = True) -> Flask:
     hostel_svc = HostelService(database)
     trans_svc = TransportService(database)
 
+    audit_svc = AuditService(database)
+    auth_svc = AuthService(database, audit_svc)
+    settings_svc = SettingsService(database, audit_svc)
+    backup_svc = BackupService(database, settings_svc, audit_svc)
+    dashboard_svc = DashboardService(database, settings_svc, backup_svc, audit_svc)
+
     @app.before_request
     def check_local_host() -> tuple[Response, int] | None:
         host = (request.host or "").split(":")[0].lower()
         if host not in ("127.0.0.1", "localhost", ""):
             return jsonify({"ok": False, "error": "Localhost access only"}), 403
         return None
+
+    @app.after_request
+    def add_security_headers(response: Response) -> Response:
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "DENY")
+        response.headers.setdefault("Referrer-Policy", "no-referrer")
+        response.headers.setdefault(
+            "Content-Security-Policy",
+            "default-src 'self'; script-src 'self' 'unsafe-inline'; "
+            "style-src 'self' 'unsafe-inline'; img-src 'self' data:;",
+        )
+        return response
 
     @app.errorhandler(NotFoundError)
     def handle_not_found(exc: NotFoundError) -> tuple[Response, int]:
@@ -92,7 +123,7 @@ def create_app(db: Database | None = None, seed: bool = True) -> Flask:
 
     @app.get("/api/health")
     def health() -> Response:
-        return jsonify({"ok": True, "status": "healthy", "db_path": database.db_path})
+        return jsonify({"ok": True, "status": "healthy", "db_name": Path(database.db_path).name})
 
     @app.get("/api/bootstrap")
     def bootstrap() -> Response:
@@ -101,6 +132,8 @@ def create_app(db: Database | None = None, seed: bool = True) -> Flask:
             {
                 "ok": True,
                 "kpis": school_svc.get_dashboard_kpis(),
+                "preferences": settings_svc.get_preferences(),
+                "backup_health": backup_svc.check_health(),
                 "school": {
                     "schools": school_svc.list_schools(),
                     "years": school_svc.list_academic_years(),
@@ -623,8 +656,12 @@ def create_app(db: Database | None = None, seed: bool = True) -> Flask:
 
 
     # -------------------------------------------------------------------------
-    # Phase 1 Modular Routes (Students Pagination, Today Haziri, Bulk Mark, Search)
+    # Phase 1 & Phase 2 Modular Routes + Deny-by-Default RBAC & Audit Middleware
     # -------------------------------------------------------------------------
     register_phase1_routes(app, database, att_svc)
+    register_auth_routes(app, auth_svc, enforce_auth=enforce_auth)
+    register_dashboard_routes(app, dashboard_svc, audit_svc)
+    register_settings_routes(app, settings_svc, backup_svc, auth_svc)
+    register_rbac_and_audit(app, auth_svc, audit_svc, dashboard_svc, enforce_auth=enforce_auth)
 
     return app

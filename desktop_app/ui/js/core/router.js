@@ -1,61 +1,58 @@
 /**
- * router.js — Tab-based router with sidebar navigation
- * Hash-based routing: #dashboard, #attendance, etc.
- * Role-based sidebar items (Phase 2 mein auth se populate hoga).
+ * router.js — Role-Aware Sidebar & Hash Router (Phase 2 — Section 9.5)
+ *
+ * Uses geometric stroke SVG icons (core/icons.js) — zero Unicode emojis.
+ * Enforces focused 4–7 item navigation per role + Hostel/Transport module toggles.
  */
 
 import { get, set, subscribe } from './state.js';
 import { esc } from './dom.js';
+import { icon } from './icons.js';
 
-// ─── Nav Items Definition ─────────────────────────────────────────────────────
-// Icon: Unicode emoji (no external font dependency for now)
-// key: tab name (matches Bootstrap data keys)
-// roles: kaun dekh sakta hai ('*' = sab)
-
-/** @type {NavItem[]} */
 export const NAV_ITEMS = [
-  { key: 'dashboard',  label: 'Dashboard',      icon: '🏠', roles: ['*'],     section: null },
-  { key: 'school',     label: 'Students',        icon: '🎓', roles: ['*'],     section: 'Academic' },
-  { key: 'attendance', label: 'Attendance',      icon: '📋', roles: ['*'],     section: 'Academic' },
-  { key: 'fees',       label: 'Fee Management',  icon: '💰', roles: ['*'],     section: 'Finance' },
-  { key: 'exam',       label: 'Exams & Results', icon: '📝', roles: ['*'],     section: 'Academic' },
-  { key: 'assignment', label: 'Assignments',     icon: '📚', roles: ['*'],     section: 'Academic' },
-  { key: 'timetable',  label: 'Timetable',       icon: '🕐', roles: ['*'],     section: 'Academic' },
-  { key: 'library',    label: 'Library',         icon: '📖', roles: ['*'],     section: 'Services' },
-  { key: 'hostel',     label: 'Hostel',          icon: '🏠', roles: ['admin'], section: 'Services' },
-  { key: 'transport',  label: 'Transport',       icon: '🚌', roles: ['*'],     section: 'Services' },
-  { key: 'event',      label: 'Events',          icon: '📅', roles: ['*'],     section: 'Services' },
+  { key: 'dashboard',  label: 'Aaj Ka Din',      iconName: 'dashboard',  roles: ['*'], section: null },
+  { key: 'school',     label: 'Students',        iconName: 'users',      roles: ['admin', 'principal', 'front_desk', 'fee_clerk', 'teacher', 'exam_incharge'], section: 'Academic' },
+  { key: 'attendance', label: 'Attendance',      iconName: 'attendance', roles: ['admin', 'principal', 'teacher', 'front_desk'], section: 'Academic' },
+  { key: 'fees',       label: 'Fee Management',  iconName: 'fees',       roles: ['admin', 'principal', 'fee_clerk'], section: 'Finance' },
+  { key: 'exam',       label: 'Exams & Results', iconName: 'exam',       roles: ['admin', 'principal', 'teacher', 'exam_incharge'], section: 'Academic' },
+  { key: 'assignment', label: 'Assignments',     iconName: 'assignment', roles: ['admin', 'principal', 'teacher'], section: 'Academic' },
+  { key: 'timetable',  label: 'Timetable',       iconName: 'timetable',  roles: ['admin', 'principal', 'teacher', 'exam_incharge'], section: 'Academic' },
+  { key: 'library',    label: 'Library',         iconName: 'library',    roles: ['admin', 'principal'], section: 'Campus' },
+  { key: 'hostel',     label: 'Hostel',          iconName: 'hostel',     roles: ['admin', 'principal'], prefKey: 'enable_hostel', section: 'Campus' },
+  { key: 'transport',  label: 'Transport',       iconName: 'transport',  roles: ['admin', 'principal', 'front_desk', 'fee_clerk'], prefKey: 'enable_transport', section: 'Campus' },
+  { key: 'event',      label: 'Events',          iconName: 'event',      roles: ['admin', 'principal', 'front_desk'], section: 'Campus' },
+  { key: 'settings',   label: 'Settings',        iconName: 'settings',   roles: ['admin', 'principal'], section: 'System' },
 ];
 
-// ─── Routing ──────────────────────────────────────────────────────────────────
+const EXTRA_TITLES = {
+  student360: 'Student 360° Profile',
+};
 
-/** @type {Map<string, Function>} */
 const _screenRenderers = new Map();
 
-/**
- * Screen renderer register karo
- * @param {string} tabKey
- * @param {Function} renderFn - async () => HTMLElement | string
- */
 export function registerScreen(tabKey, renderFn) {
   _screenRenderers.set(tabKey, renderFn);
 }
 
-/**
- * Tab navigate karo
- * @param {string} tab
- */
-export function navigateTo(tab) {
-  set({ tab, filter: '' });
-  history.replaceState(null, '', `#${tab}`);
-  _renderActiveScreen();
-  _updateSidebarActive(tab);
-  _updatePageTitle(tab);
+export function isTabAllowed(tabKey) {
+  if (tabKey === 'student360') return true;
+  const role = get('role') || 'admin';
+  const prefs = get('preferences') || {};
+  const item = NAV_ITEMS.find(n => n.key === tabKey);
+  if (!item) return false;
+  if (item.prefKey && prefs[item.prefKey] === false) return false;
+  return item.roles.includes('*') || item.roles.includes(role);
 }
 
-/**
- * Active screen render karo
- */
+export function navigateTo(tab, extraState = {}) {
+  const target = isTabAllowed(tab) ? tab : 'dashboard';
+  set({ tab: target, filter: '', ...extraState });
+  history.replaceState(null, '', `#${target}`);
+  _renderActiveScreen();
+  _updateSidebarActive(target);
+  _updatePageTitle(target);
+}
+
 async function _renderActiveScreen() {
   const tab       = get('tab');
   const container = document.getElementById('main-view');
@@ -65,15 +62,13 @@ async function _renderActiveScreen() {
   if (!renderer) {
     container.innerHTML = `
       <div class="empty-state">
-        <div class="empty-state-icon">🚧</div>
-        <div class="empty-state-title">"${esc(tab)}" screen abhi banana baaki hai</div>
-        <div class="empty-state-desc">Phase 1 implementation mein yeh screen jald aayegi.</div>
-      </div>
-    `;
+        <div class="empty-state-icon">${icon('folder', 40)}</div>
+        <div class="empty-state-title">Module unavailable</div>
+        <div class="empty-state-desc">Select an active workspace from the left navigation.</div>
+      </div>`;
     return;
   }
 
-  // Show skeleton while loading
   container.innerHTML = `<div class="panel"><div class="panel-body">
     <div class="skeleton skeleton-title" style="width:200px"></div>
     <div class="skeleton skeleton-row" style="margin-top:16px"></div>
@@ -93,30 +88,27 @@ async function _renderActiveScreen() {
     console.error(`[Router] Screen render error (${tab}):`, err);
     container.innerHTML = `
       <div class="empty-state">
-        <div class="empty-state-icon">⚠️</div>
-        <div class="empty-state-title">Screen load nahi ho saki</div>
+        <div class="empty-state-icon">${icon('alert', 40)}</div>
+        <div class="empty-state-title">Unable to load screen</div>
         <div class="empty-state-desc">${esc(err.message)}</div>
-      </div>
-    `;
+      </div>`;
   }
 }
 
-// ─── Sidebar Rendering ────────────────────────────────────────────────────────
-
-/**
- * Sidebar build karo with pill counts
- * @param {object} bootstrapData
- */
 export function buildSidebar(bootstrapData) {
   const navEl = document.getElementById('nav-list');
   if (!navEl) return;
 
-  const role      = get('role');
-  const pills     = _getPillCounts(bootstrapData);
-  let   lastSection = null;
+  const role  = get('role') || 'admin';
+  const prefs = get('preferences') || {};
+  const pills = _getPillCounts(bootstrapData);
+  let lastSection = null;
 
   navEl.innerHTML = NAV_ITEMS
-    .filter(item => item.roles.includes('*') || item.roles.includes(role))
+    .filter(item => {
+      if (item.prefKey && prefs[item.prefKey] === false) return false;
+      return item.roles.includes('*') || item.roles.includes(role);
+    })
     .map(item => {
       let sectionHtml = '';
       if (item.section !== lastSection) {
@@ -128,9 +120,10 @@ export function buildSidebar(bootstrapData) {
       const count = pills[item.key] ?? '';
       return `${sectionHtml}
         <li>
-          <button class="sidebar-nav-item" data-tab="${esc(item.key)}"
+          <button class="sidebar-nav-item ${get('tab') === item.key ? 'active' : ''}"
+                  data-tab="${esc(item.key)}"
                   aria-current="${get('tab') === item.key ? 'page' : 'false'}">
-            <span class="sidebar-nav-icon">${item.icon}</span>
+            <span class="sidebar-nav-icon">${icon(item.iconName, 16)}</span>
             <span class="sidebar-nav-label">${esc(item.label)}</span>
             ${count ? `<span class="sidebar-nav-badge" id="pill-${esc(item.key)}">${count}</span>` : ''}
           </button>
@@ -139,34 +132,23 @@ export function buildSidebar(bootstrapData) {
     .join('');
 }
 
-/**
- * Sidebar active state update karo
- * @param {string} activeTab
- */
 function _updateSidebarActive(activeTab) {
+  const matchTab = activeTab === 'student360' ? 'school' : activeTab;
   document.querySelectorAll('.sidebar-nav-item').forEach(btn => {
-    const isActive = btn.dataset.tab === activeTab;
+    const isActive = btn.dataset.tab === matchTab;
     btn.classList.toggle('active', isActive);
     btn.setAttribute('aria-current', isActive ? 'page' : 'false');
   });
 }
 
-/**
- * Page title update karo
- * @param {string} tab
- */
 function _updatePageTitle(tab) {
   const item = NAV_ITEMS.find(n => n.key === tab);
+  const label = item?.label ?? EXTRA_TITLES[tab] ?? 'School ERP';
   const titleEl = document.getElementById('page-title');
-  if (titleEl) titleEl.textContent = item?.label ?? 'School ERP';
-  document.title = `${item?.label ?? 'ERP'} — ${get('schoolName') || 'School ERP'}`;
+  if (titleEl) titleEl.textContent = label;
+  document.title = `${label} — ${get('schoolName') || 'School ERP'}`;
 }
 
-/**
- * Sidebar pill counts calculate karo from bootstrap data
- * @param {object} d
- * @returns {Record<string, number>}
- */
 function _getPillCounts(d) {
   if (!d) return {};
   return {
@@ -183,58 +165,24 @@ function _getPillCounts(d) {
   };
 }
 
-/**
- * Update single pill count (targeted refresh ke baad)
- * @param {string} tab
- * @param {number} count
- */
 export function updatePill(tab, count) {
   const el = document.getElementById(`pill-${tab}`);
   if (el) el.textContent = count > 0 ? String(count) : '';
 }
 
-// ─── Initialization ───────────────────────────────────────────────────────────
-
-/**
- * Router initialize karo — hash change, sidebar clicks, keyboard nav
- */
 export function initRouter() {
-  // Sidebar click delegation
   document.getElementById('nav-list')?.addEventListener('click', e => {
     const btn = e.target.closest('[data-tab]');
     if (btn) navigateTo(btn.dataset.tab);
   });
 
-  // Hash change (browser back/forward — rare in desktop app, but handle it)
   window.addEventListener('hashchange', () => {
     const hash = location.hash.slice(1);
-    if (hash && _screenRenderers.has(hash)) {
+    if (hash && _screenRenderers.has(hash) && isTabAllowed(hash)) {
       set({ tab: hash });
       _renderActiveScreen();
       _updateSidebarActive(hash);
       _updatePageTitle(hash);
     }
   });
-
-  // Initial route from hash or default 'dashboard'
-  const initialTab = location.hash.slice(1) || 'dashboard';
-  set({ tab: initialTab });
-  _updatePageTitle(initialTab);
-
-  // State change pe re-render (when tab changes programmatically)
-  subscribe('tab', () => {
-    _renderActiveScreen();
-    _updateSidebarActive(get('tab'));
-    _updatePageTitle(get('tab'));
-  });
 }
-
-/**
- * @typedef {Object} NavItem
- * @property {string} key
- * @property {string} label
- * @property {string} icon
- * @property {string[]} roles
- * @property {string|null} section
- */
-

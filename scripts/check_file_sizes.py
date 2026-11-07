@@ -48,7 +48,27 @@ def check_files() -> int:
         if lines > 400:
             violations.append(f"{rel} has {lines} lines (max 400)")
 
-    print(f"\nChecked {checked} Phase 1 files.")
+    phase2_services = [
+        "audit_service.py",
+        "auth_service.py",
+        "backup_service.py",
+        "dashboard_service.py",
+        "settings_service.py",
+        "student360_service.py",
+    ]
+    for svc_name in phase2_services:
+        svc_file = ROOT / "desktop_app" / "services" / svc_name
+        if not svc_file.exists():
+            continue
+        lines = len(svc_file.read_text(encoding="utf-8").splitlines())
+        rel = svc_file.relative_to(ROOT)
+        checked += 1
+        status = "OK" if lines <= 600 else "VIOLATION (>600)"
+        print(f"  [SVC] {str(rel):48s} : {lines:4d} lines  [{status}]")
+        if lines > 600:
+            violations.append(f"{rel} has {lines} lines (max 600)")
+
+    print(f"\nChecked {checked} Phase 1 & Phase 2 files.")
     if violations:
         print("FAILED violations:")
         for v in violations:

@@ -1,29 +1,23 @@
 /**
- * school/student-modal.js — Quick Admission Modal & Student Row Actions (Phase 1)
+ * school/student-modal.js — Quick Admission Modal & Student Row Actions (Phase 1/2)
  *
- * Extracted from students-list.js to keep every JS module under 250 lines.
- * Fixes DOB hard-coded default bug (W9: DOB starts blank, required).
+ * Uses styled `confirm()` dialog and clean text/SVG feedback (zero Unicode emojis).
  */
 
 import { apiPost } from '../../core/api.js';
 import { getBootstrap } from '../../core/state.js';
-import { esc, toast, openModal, closeModal } from '../../core/dom.js';
+import { esc, toast, openModal, closeModal, confirm } from '../../core/dom.js';
 
-/**
- * Execute a student lifecycle action (Admit, Set Alumni, Terminate)
- * @param {number} id
- * @param {string} action
- * @param {HTMLButtonElement} btn
- * @param {Function} onSuccess
- */
 export async function performStudentAction(id, action, btn, onSuccess) {
-  const labels = {
-    admission_done: 'Admit karna chahte hain?',
-    set_alumni:     'Alumni mark karna chahte hain?',
-    terminate:      'Student terminate karna chahte hain?',
+  const prompts = {
+    admission_done: ['Confirm Admission', 'Enroll this student as an active student in the selected class?', 'btn-primary'],
+    set_alumni:     ['Mark as Alumni', 'Move this student record to Alumni status?', 'btn-secondary'],
+    terminate:      ['Terminate Enrollment', 'Terminate this student enrollment record?', 'btn-danger'],
   };
+  const [title, desc, cls] = prompts[action] || ['Confirm Action', 'Proceed with this status update?', 'btn-primary'];
 
-  if (!window.confirm(labels[action] || 'Kya aap mutmaeen hain?')) return;
+  const ok = await confirm(title, desc, { confirmLabel: 'Confirm', confirmClass: cls });
+  if (!ok) return;
 
   const origText  = btn.textContent;
   btn.disabled    = true;
@@ -31,7 +25,7 @@ export async function performStudentAction(id, action, btn, onSuccess) {
 
   try {
     await apiPost(`/api/students/${id}/action`, { action });
-    toast('✓ Student status update ho gaya', 'success');
+    toast('Student status updated', 'success');
     if (typeof onSuccess === 'function') onSuccess();
   } catch (err) {
     toast(err.message, 'error');
@@ -40,10 +34,6 @@ export async function performStudentAction(id, action, btn, onSuccess) {
   }
 }
 
-/**
- * Open Quick New Student Admission Modal
- * @param {Function} onSuccess - callback after successful admission
- */
 export function openNewStudentModal(onSuccess) {
   const data    = getBootstrap();
   const classes = data?.school?.standards || [];
@@ -51,7 +41,7 @@ export function openNewStudentModal(onSuccess) {
   const schools = data?.school?.schools   || [];
 
   const classOpts = classes.map(c =>
-    `<option value="${esc(c.id)}">${esc(c.name)} (${esc(c.remaining_seats ?? 0)} seats free)</option>`
+    `<option value="${esc(c.id)}">${esc(c.name)} (${esc(c.remaining_seats ?? 0)} seats available)</option>`
   ).join('');
   const yearOpts = years.map(y =>
     `<option value="${esc(y.id)}" ${y.current ? 'selected' : ''}>${esc(y.name)}</option>`
@@ -72,7 +62,7 @@ export function openNewStudentModal(onSuccess) {
       <div class="form-group">
         <label class="form-label required" for="ns-class">Class</label>
         <select class="form-control" id="ns-class" required>
-          <option value="">— Class chunein —</option>
+          <option value="">— Select Class —</option>
           ${classOpts}
         </select>
       </div>
@@ -91,19 +81,19 @@ export function openNewStudentModal(onSuccess) {
       <div class="form-group">
         <label class="form-label" for="ns-gender">Gender</label>
         <select class="form-control" id="ns-gender">
-          <option value="male">Male (Larka)</option>
-          <option value="female">Female (Larki)</option>
+          <option value="male">Male</option>
+          <option value="female">Female</option>
         </select>
       </div>
     </div>
     <div class="form-group">
-      <label class="form-label" for="ns-mobile">Walid / Guardian Mobile (03XX-XXXXXXX)</label>
+      <label class="form-label" for="ns-mobile">Guardian Mobile (03XX-XXXXXXX)</label>
       <input class="form-control" id="ns-mobile" placeholder="0300-1234567" />
     </div>
     <input type="hidden" id="ns-school" value="${esc(schools[0]?.id || 1)}" />
   `;
 
-  openModal('Naya Admission (Quick Entry)', bodyHtml, async () => {
+  openModal('New Student Admission (Quick Entry)', bodyHtml, async () => {
     const name     = document.getElementById('ns-name')?.value?.trim();
     const last     = document.getElementById('ns-last')?.value?.trim();
     const classId  = document.getElementById('ns-class')?.value;
@@ -114,8 +104,7 @@ export function openNewStudentModal(onSuccess) {
     const schoolId = document.getElementById('ns-school')?.value || '1';
 
     if (!name || !classId || !yearId || !dob) {
-      toast('Zaroori fields fill karein (First Name, Class, Academic Year, DOB)', 'warn');
-      return;
+      throw new Error('Please fill all required fields (First Name, Class, Academic Year, Date of Birth).');
     }
 
     await apiPost('/api/students', {
@@ -130,9 +119,8 @@ export function openNewStudentModal(onSuccess) {
       auto_admit:     true,
     });
 
-    toast(`✓ ${name} ka admission mukammal ho gaya!`, 'success');
+    toast(`Admission completed for ${name}`, 'success');
     closeModal();
     if (typeof onSuccess === 'function') onSuccess();
-  }, { submitLabel: 'Admission Karein' });
+  }, { submitLabel: 'Complete Admission' });
 }
-

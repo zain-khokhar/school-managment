@@ -153,3 +153,22 @@ th.num,
   white-space: nowrap;
 }
 
+/* ── Inline Geometric Stroke SVG Icons ───────────────────────── */
+.ui-icon {
+  display: inline-block;
+  vertical-align: -0.16em;
+  flex-shrink: 0;
+}
+
+/* ── Reduced Motion Preference (Section 9.3) ─────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
