@@ -14,7 +14,7 @@ import { esc, toast, openModal, closeModal, getModalSubmitHandler } from './core
 import { icon } from './core/icons.js';
 import { formatTime } from './core/format.js';
 import { initRouter, registerScreen, buildSidebar, navigateTo } from './core/router.js';
-import { injectBilingualCSS } from './core/i18n.js';
+import { injectBilingualCSS, initI18n, getLang, toggleLang } from './core/i18n.js';
 
 import { checkAuthAndGate, showLoginGate } from './screens/login/login-screen.js';
 import { renderDashboardScreen } from './screens/dashboard/home.js';
@@ -26,6 +26,7 @@ import { renderExamScreen } from './screens/exam/exam-workspace.js';
 import { renderTimetableScreen } from './screens/timetable/weekly-grid.js';
 import { renderLibraryScreen } from './screens/library/library-screen.js';
 import { renderSettingsScreen } from './screens/settings/settings-screen.js';
+import { renderOutboxScreen } from './screens/outbox/outbox-workspace.js';
 
 async function loadBootstrapData() {
   set({ loadingBootstrap: true });
@@ -62,6 +63,7 @@ function registerAllScreens() {
   registerScreen('timetable',  async () => renderTimetableScreen());
   registerScreen('library',    async () => renderLibraryScreen());
   registerScreen('settings',   async () => renderSettingsScreen());
+  registerScreen('outbox',     async () => renderOutboxScreen());
 
   registerScreen('attendance', async () => {
     const html = await renderAttendanceScreen();
@@ -238,11 +240,24 @@ async function _handleAuthenticatedUser(user) {
 }
 
 async function init() {
+  initI18n();
   injectBilingualCSS();
   initModalAndBridge();
   registerAllScreens();
   initRouter();
   initGlobalSearch();
+
+  const langBtn = document.getElementById('btn-toggle-lang');
+  if (langBtn) {
+    langBtn.textContent = getLang() === 'ur' ? 'ENG' : 'URDU';
+    langBtn.onclick = () => {
+      const next = toggleLang();
+      langBtn.textContent = next === 'ur' ? 'ENG' : 'URDU';
+      const curTab = get('tab') || 'dashboard';
+      navigateTo(curTab);
+    };
+  }
+
   onUnauthorized(() => showLoginGate(_handleAuthenticatedUser));
 
   const user = await checkAuthAndGate(_handleAuthenticatedUser);

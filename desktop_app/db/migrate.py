@@ -163,6 +163,50 @@ CREATE INDEX IF NOT EXISTS idx_exam_result_rank ON exam_result(s_exam_ids, stand
 CREATE INDEX IF NOT EXISTS idx_student_b_form ON student_student(b_form_no);
 """
 
+MIGRATION_004_SQL = """
+CREATE TABLE IF NOT EXISTS message_template (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    code TEXT NOT NULL UNIQUE COLLATE NOCASE,
+    title TEXT NOT NULL,
+    category TEXT NOT NULL DEFAULT 'general'
+        CHECK(category IN ('attendance', 'fee_due', 'result', 'circular', 'general')),
+    body_template TEXT NOT NULL,
+    active INTEGER NOT NULL DEFAULT 1,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS outbox_message (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    channel TEXT NOT NULL DEFAULT 'whatsapp'
+        CHECK(channel IN ('whatsapp', 'email', 'sms')),
+    to_name TEXT NOT NULL,
+    to_phone TEXT DEFAULT '',
+    to_email TEXT DEFAULT '',
+    template_code TEXT NOT NULL,
+    category TEXT NOT NULL DEFAULT 'general'
+        CHECK(category IN ('attendance', 'fee_due', 'result', 'circular', 'general')),
+    subject TEXT DEFAULT '',
+    payload_json TEXT DEFAULT '{}',
+    body_text TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'ready'
+        CHECK(status IN ('queued', 'ready', 'sent', 'failed', 'cancelled')),
+    attempts INTEGER NOT NULL DEFAULT 0,
+    last_error TEXT DEFAULT '',
+    dedupe_date TEXT NOT NULL,
+    due_at TEXT,
+    created_at TEXT NOT NULL,
+    sent_at TEXT,
+    created_by TEXT DEFAULT 'system',
+    student_id INTEGER REFERENCES student_student(id) ON DELETE SET NULL,
+    family_key TEXT DEFAULT '',
+    class_id INTEGER REFERENCES school_standard(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_outbox_status ON outbox_message(status, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_outbox_dedupe ON outbox_message(student_id, template_code, dedupe_date);
+CREATE INDEX IF NOT EXISTS idx_outbox_family_dedupe ON outbox_message(family_key, template_code, dedupe_date);
+"""
+
 _ALLOWED_ALTER_TABLES = frozenset(
     {"student_payslip", "school_parent", "exam_result", "exam_subject", "student_student"}
 )
@@ -293,10 +337,51 @@ def _migration_003(conn: sqlite3.Connection) -> None:
     _execute_sql_statements(conn, MIGRATION_003_SQL)
 
 
+DEFAULT_MESSAGE_TEMPLATES: list[tuple[str, str, str, str]] = [
+    (
+        "ABSENT_ALERT",
+        "Daily Absence Notice",
+        "attendance",
+        "Dear {guardian_name}, your child {student_name} (Class {class_name}, GR #{gr_no}) was marked absent on {date}. Please inform the school office regarding the reason. Regards, {school_name}.",
+    ),
+    (
+        "FEE_REMINDER",
+        "Fee Balance Reminder",
+        "fee_due",
+        "Dear {guardian_name}, a fee balance of {amount} is due for {student_name} (Class {class_name}, Voucher #{voucher_no}, Due Date: {due_date}). Kindly clear the dues at the school fee counter. Regards, {school_name}.",
+    ),
+    (
+        "RESULT_READY",
+        "Examination Result Notice",
+        "result",
+        "Dear {guardian_name}, the examination result for {student_name} ({exam_name}) is ready: {percentage}% (Grade: {grade}). Please collect the official report card from the school office. Regards, {school_name}.",
+    ),
+    (
+        "PTM_CIRCULAR",
+        "General School Circular / PTM Notice",
+        "circular",
+        "Dear {guardian_name}, {notice_title}: {notice_body} — Student: {student_name} ({class_name}). Regards, {school_name}.",
+    ),
+]
+
+
+def _migration_004(conn: sqlite3.Connection) -> None:
+    _execute_sql_statements(conn, MIGRATION_004_SQL)
+    for code, title, category, body_tpl in DEFAULT_MESSAGE_TEMPLATES:
+        conn.execute(
+            """
+            INSERT OR IGNORE INTO message_template (code, title, category, body_template, active, updated_at)
+            VALUES (?, ?, ?, ?, 1, '2026-01-01T00:00:00Z')
+            """,
+            (code, title, category, body_tpl),
+        )
+
+
 MIGRATIONS: list[tuple[int, str, Callable[[sqlite3.Connection], None]]] = [
     (1, "phase2_auth_audit_settings", _migration_001),
     (2, "phase3_fees_family_paisa_ledger", _migration_002),
     (3, "phase4_academics_calendar_admissions_ranks", _migration_003),
+    (4, "phase5_outbox_templates_circulars", _migration_004),
 ]
 
 LATEST_SCHEMA_VERSION = MIGRATIONS[-1][0]

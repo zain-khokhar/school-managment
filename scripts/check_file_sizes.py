@@ -62,6 +62,8 @@ def check_files() -> int:
         "calendar_timetable_mixin.py",
         "admission_import_service.py",
         "student_prints_mixin.py",
+        "outbox_service.py",
+        "outbox_triggers_mixin.py",
     ]
     for svc_name in phase_services:
         svc_file = ROOT / "desktop_app" / "services" / svc_name

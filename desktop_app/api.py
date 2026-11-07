@@ -31,6 +31,7 @@ from desktop_app.routes.auth_routes import register_auth_routes
 from desktop_app.routes.dashboard_routes import register_dashboard_routes
 from desktop_app.routes.family_routes import register_family_routes
 from desktop_app.routes.fees_routes import register_fees_routes
+from desktop_app.routes.outbox_routes import register_outbox_routes
 from desktop_app.routes.phase1_routes import register_phase1_routes
 from desktop_app.routes.rbac import register_rbac_and_audit
 from desktop_app.routes.settings_routes import register_settings_routes
@@ -42,6 +43,7 @@ from desktop_app.services.backup_service import BackupService
 from desktop_app.services.dashboard_service import DashboardService
 from desktop_app.services.family_service import FamilyService
 from desktop_app.services.fee_engine_service import FeeEngineService
+from desktop_app.services.outbox_service import OutboxService
 from desktop_app.services.settings_service import SettingsService
 from desktop_app.services.timetable_service import TimetableService
 
@@ -89,6 +91,7 @@ def create_app(
     adm_import_svc = AdmissionImportService(
         database, school_svc, family_svc, fee_engine_svc, lib_svc, settings_svc, audit_svc
     )
+    outbox_svc = OutboxService(database, audit_svc, settings_svc)
 
     @app.before_request
     def check_local_host() -> tuple[Response, int] | None:
@@ -681,6 +684,7 @@ def create_app(
     register_family_routes(app, family_svc)
     register_academics_routes(app, academic_svc, tt_svc)
     register_admissions_import_routes(app, adm_import_svc)
+    register_outbox_routes(app, outbox_svc)
     register_rbac_and_audit(app, auth_svc, audit_svc, dashboard_svc, enforce_auth=enforce_auth)
 
     return app

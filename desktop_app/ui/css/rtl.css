@@ -1,0 +1,148 @@
+/**
+ * rtl.css — Urdu RTL & Regional Typography Layout (Phase 5)
+ *
+ * Activated when <html dir="rtl"> or body.rtl-mode is set.
+ * Preserves strict LTR numerical integrity for phone numbers and currency.
+ */
+
+html[dir="rtl"],
+body.rtl-mode {
+  direction: rtl;
+  text-align: right;
+  font-family: var(--font-urdu, "Noto Naskh Arabic", "Segoe UI", Tahoma, sans-serif);
+}
+
+/* Typography line-height adjustment for Urdu Nastaliq/Naskh */
+html[dir="rtl"] h1,
+html[dir="rtl"] h2,
+html[dir="rtl"] h3,
+html[dir="rtl"] h4,
+html[dir="rtl"] .page-header-title,
+html[dir="rtl"] .card-title {
+  font-family: var(--font-urdu, "Noto Naskh Arabic", "Segoe UI", Tahoma, sans-serif);
+  line-height: 1.8;
+}
+
+/* Sidebar mirroring */
+html[dir="rtl"] .sidebar {
+  border-right: none;
+  border-left: 1px solid var(--rule, #E3DAC9);
+}
+
+html[dir="rtl"] .sidebar-nav-item {
+  padding-left: 12px;
+  padding-right: 14px;
+}
+
+html[dir="rtl"] .sidebar-nav-icon {
+  margin-right: 0;
+  margin-left: 10px;
+}
+
+/* Header & Topbar */
+html[dir="rtl"] .topbar-search-box {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+html[dir="rtl"] .topbar-search-input {
+  padding-right: 32px;
+  padding-left: 12px;
+}
+
+html[dir="rtl"] .topbar-search-icon {
+  right: 10px;
+  left: auto;
+}
+
+/* Table Text & Columns */
+html[dir="rtl"] th,
+html[dir="rtl"] td {
+  text-align: right;
+}
+
+/* NUMERICAL INTEGRITY: Phone numbers, amounts & codes must remain LTR */
+html[dir="rtl"] .tabular-num,
+html[dir="rtl"] .money-cell,
+html[dir="rtl"] .currency-cell,
+html[dir="rtl"] .voucher-number,
+html[dir="rtl"] input[type="tel"],
+html[dir="rtl"] input[type="number"],
+html[dir="rtl"] .phone-display {
+  direction: ltr !important;
+  text-align: left !important;
+  display: inline-block;
+  unicode-bidi: embed;
+}
+
+/* Action button icons in RTL */
+html[dir="rtl"] .btn .ui-icon {
+  margin-right: 0;
+  margin-left: 6px;
+}
+
+/* Modals */
+html[dir="rtl"] .modal-header .btn-close {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+html[dir="rtl"] .modal-footer {
+  justify-content: flex-start;
+}
+
+/* Form groups and checkboxes */
+html[dir="rtl"] .form-check-input {
+  margin-right: 0;
+  margin-left: 8px;
+}
+
+/* Badges and chips */
+html[dir="rtl"] .badge {
+  letter-spacing: 0;
+}
+
+/* Breadcrumbs */
+html[dir="rtl"] .breadcrumb-sep {
+  transform: rotate(180deg);
+}
+
+/* Outbox specific styling */
+.outbox-status-bar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.outbox-kpi-pill {
+  padding: 6px 14px;
+  border-radius: 20px;
+  background: var(--surface, #FFF);
+  border: 1px solid var(--rule, #E3DAC9);
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.outbox-kpi-pill strong {
+  font-size: 15px;
+  color: var(--chai, #8A4B16);
+}
+
+.wa-btn {
+  background: #25D366;
+  color: #FFF;
+  border: none;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.wa-btn:hover {
+  background: #1EBE5D;
+  color: #FFF;
+}
+

@@ -17,6 +17,7 @@ export const NAV_ITEMS = [
   { key: 'exam',       label: 'Exams & Results', iconName: 'exam',       roles: ['admin', 'principal', 'teacher', 'exam_incharge'], section: 'Academic' },
   { key: 'assignment', label: 'Assignments',     iconName: 'assignment', roles: ['admin', 'principal', 'teacher'], section: 'Academic' },
   { key: 'timetable',  label: 'Timetable',       iconName: 'timetable',  roles: ['admin', 'principal', 'teacher', 'exam_incharge'], section: 'Academic' },
+  { key: 'outbox',     label: 'Outbox & Rabta',  iconName: 'mail',       roles: ['admin', 'principal', 'front_desk', 'fee_clerk', 'teacher'], section: 'Academic' },
   { key: 'library',    label: 'Library',         iconName: 'library',    roles: ['admin', 'principal'], section: 'Campus' },
   { key: 'hostel',     label: 'Hostel',          iconName: 'hostel',     roles: ['admin', 'principal'], prefKey: 'enable_hostel', section: 'Campus' },
   { key: 'transport',  label: 'Transport',       iconName: 'transport',  roles: ['admin', 'principal', 'front_desk', 'fee_clerk'], prefKey: 'enable_transport', section: 'Campus' },

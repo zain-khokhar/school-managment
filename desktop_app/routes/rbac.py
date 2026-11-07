@@ -134,6 +134,17 @@ ROUTE_PERMISSIONS: dict[tuple[str, str], frozenset[str]] = {
     ("POST", "/api/transport/registrations"): ADMINS,
     ("POST", "/api/transport/registrations/<int:reg_id>/action"): ADMINS,
     ("POST", "/api/transport/transfer-vehicle"): ADMINS,
+    # Phase 5: Outbox, WhatsApp & Rabta Messaging
+    ("GET", "/api/outbox/messages"): ALL_STAFF,
+    ("GET", "/api/outbox/stats"): ALL_STAFF,
+    ("POST", "/api/outbox/messages/<int:msg_id>/action"): ALL_STAFF,
+    ("POST", "/api/outbox/bulk-action"): ALL_STAFF,
+    ("GET", "/api/outbox/templates"): ALL_STAFF,
+    ("POST", "/api/outbox/templates/<int:template_id>"): ADMINS,
+    ("POST", "/api/outbox/generate/absent"): ALL_STAFF,
+    ("POST", "/api/outbox/generate/fee-reminders"): FEES_STAFF,
+    ("POST", "/api/outbox/generate/exam-results"): EXAM_LEAD,
+    ("POST", "/api/outbox/generate/circular"): ADMINS | FRONT_DESK_STAFF,
 }
 
 

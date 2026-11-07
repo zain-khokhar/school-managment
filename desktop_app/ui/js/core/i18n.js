@@ -1,70 +1,53 @@
 /**
- * i18n.js — English UI Label Dictionary
- *
- * Centralizes common UI labels in standard English across all screens.
+ * core/i18n.js — Bilingual English/Urdu System & RTL Controller (Phase 5)
  */
 
+import { EN } from '../i18n/en.js';
+import { UR } from '../i18n/ur.js';
 import { isBilingual, setBilingual } from './state.js';
+
 export { isBilingual, setBilingual };
 
-export const STRINGS = {
-  nav_dashboard:    'Overview',
-  nav_students:     'Students',
-  nav_attendance:   'Attendance',
-  nav_fees:         'Fees & Billing',
-  nav_exam:         'Exams & Results',
-  nav_timetable:    'Timetable',
-  nav_library:      'Library',
-  nav_transport:    'Transport',
-  nav_events:       'Events',
+let _currentLang = localStorage.getItem('erp_lang') || 'en';
 
-  att_title:        'Mark Attendance',
-  att_present:      'Present',
-  att_absent:       'Absent',
-  att_on_leave:     'On Leave',
-  att_submit:       'Submit Roll Call',
-  att_total:        'Total',
-  att_validate_ok:  'Attendance saved.',
+export function getLang() {
+  return _currentLang;
+}
 
-  stu_gr_no:        'GR No.',
-  stu_name:         'Name',
-  stu_class:        'Class',
-  stu_roll:         'Roll No.',
-  stu_status:       'Status',
-  stu_dob:          'Date of Birth',
-  stu_gender:       'Gender',
-  stu_mobile:       'Mobile',
-  stu_father:       'Guardian',
+export function setLang(lang) {
+  _currentLang = lang === 'ur' ? 'ur' : 'en';
+  localStorage.setItem('erp_lang', _currentLang);
+  const isRtl = _currentLang === 'ur';
 
-  fee_voucher:      'Fee Voucher',
-  fee_due:          'Balance Due',
-  fee_paid:         'Paid',
-  fee_total:        'Total',
-  fee_month:        'Billing Month',
-  fee_receive:      'Receive Payment',
+  document.documentElement.setAttribute('dir', isRtl ? 'rtl' : 'ltr');
+  document.documentElement.setAttribute('lang', _currentLang);
+  document.body?.classList.toggle('rtl-mode', isRtl);
 
-  common_save:      'Save',
-  common_cancel:    'Cancel',
-  common_delete:    'Delete',
-  common_search:    'Search',
-  common_loading:   'Loading...',
-  common_no_data:   'No records found.',
-  common_actions:   'Actions',
-  common_new:       'New',
-  common_print:     'Print',
-  common_export:    'Export',
-  common_today:     'Today',
-  common_yes:       'Confirm',
-};
+  window.dispatchEvent(new CustomEvent('erp:lang-change', { detail: { lang: _currentLang } }));
+}
+
+export function toggleLang() {
+  const next = _currentLang === 'en' ? 'ur' : 'en';
+  setLang(next);
+  return next;
+}
 
 export function t(key) {
-  return STRINGS[key] ?? key;
+  const dict = _currentLang === 'ur' ? UR : EN;
+  return dict[key] || EN[key] || key;
 }
 
 export function bilingualHtml(key) {
-  return STRINGS[key] ?? key;
+  const enText = EN[key] || key;
+  const urText = UR[key];
+  if (!urText || urText === enText) return enText;
+  return `<span class="bilingual-wrap"><span class="bilingual-en">${enText}</span><span class="bilingual-ur">${urText}</span></span>`;
+}
+
+export function initI18n() {
+  setLang(_currentLang);
 }
 
 export function injectBilingualCSS() {
-  // Retained as a no-op hook for module startup compatibility (English-only mode).
+  // Retained for backward compatibility
 }
