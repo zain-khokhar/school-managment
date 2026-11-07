@@ -1,5 +1,5 @@
 """
-Phase 1 Routes — Paginated Students, Today Attendance, Bulk Haziri Mark & Global Search.
+Phase 1 Routes — Paginated Students, Today Attendance, Bulk Roll-Call Mark & Global Search.
 
 Extracted from api.py to enforce the anti-monolith rule (<= 400 lines per Python module).
 Includes structured request timing logs for performance analysis (D4 requirement).
@@ -149,8 +149,8 @@ def register_phase1_routes(
         att = att_svc.get_daily_attendance(att_id)
         if att["state"] == "validate":
             raise SchoolERPError(
-                "Yeh haziri already validate ho chuki hai. "
-                "Draft mein wapis laane ke liye 'Reset to Draft' use karein."
+                "This attendance sheet is already validated. "
+                "Use 'Reopen Sheet' to reset it to Draft before editing."
             )
 
         with database.connection() as conn:
@@ -224,16 +224,16 @@ def register_phase1_routes(
             vouchers = conn.execute(
                 """
                 SELECT 'voucher' AS type, p.id,
-                       p.number || ' — ' || s.student_name AS label,
+                       COALESCE(NULLIF(p.voucher_no, ''), p.number) || ' — ' || s.student_name AS label,
                        p.name AS sub,
                        'Rs. ' || CAST(ROUND(p.total, 0) AS INTEGER) AS meta,
                        p.state
                 FROM student_payslip p
                 JOIN student_student s ON s.id = p.student_id
-                WHERE p.number LIKE ? OR p.name LIKE ? OR s.student_name LIKE ?
+                WHERE p.voucher_no LIKE ? OR p.number LIKE ? OR p.name LIKE ? OR s.student_name LIKE ?
                 LIMIT 5
                 """,
-                (like, like, like),
+                (like, like, like, like),
             ).fetchall()
             results.extend(dict(r) for r in vouchers)
 

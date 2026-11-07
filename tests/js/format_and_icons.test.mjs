@@ -10,12 +10,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { formatPKR, fullName, stateLabel, stateBadgeClass } from '../../desktop_app/ui/js/core/format.js';
+import { formatPKR, formatPaisa, formatRelative, fullName, stateLabel, stateBadgeClass } from '../../desktop_app/ui/js/core/format.js';
 import { icon } from '../../desktop_app/ui/js/core/icons.js';
 
-test('formatPKR formats integer and decimal rupees cleanly', () => {
+test('formatPKR and formatPaisa format integer and fractional paisa cleanly', () => {
   assert.match(formatPKR(4500), /Rs\.\s*4,500/);
   assert.equal(formatPKR(null), 'Rs.\u00A00');
+  assert.match(formatPaisa(450000), /Rs\.\s*4,500$/);
+  assert.match(formatPaisa(123455), /Rs\.\s*1,234\.55$/);
+  assert.equal(formatPaisa(0), 'Rs.\u00A00');
 });
 
 test('fullName concatenates student name parts without extra spaces', () => {
@@ -41,7 +44,11 @@ test('stateBadgeClass enforces calm enterprise color restraint', () => {
   assert.equal(stateBadgeClass('reject'), 'badge-danger');
   assert.equal(stateBadgeClass('fail'), 'badge-danger');
   assert.equal(stateBadgeClass('fine'), 'badge-danger');
+  assert.equal(stateBadgeClass('reversed'), 'badge-danger');
+  assert.equal(stateBadgeClass('rolled_over'), 'badge-neutral');
   assert.equal(stateLabel('done'), 'Enrolled');
+  assert.equal(stateLabel('rolled_over'), 'Carried Forward');
+  assert.equal(formatRelative(new Date().toISOString()), 'Today');
 });
 
 test('icon() renders valid inline 24x24 stroke SVG without emojis', () => {

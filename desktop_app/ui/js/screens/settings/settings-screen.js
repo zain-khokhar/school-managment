@@ -1,16 +1,9 @@
 /**
- * screens/settings/settings-screen.js — School Configuration, Backup/Restore & Audit (Phase 2 — G22)
- *
- * Implements SET-1..SET-6:
- *   - SET-1: 5-step First-Run Onboarding Checklist
- *   - SET-2: School Profile & Active Academic Year
- *   - SET-3/4: Bilingual Urdu Print toggle (D3) & Hostel/Transport module toggles
- *   - SET-5: SQLite WAL Backup, Integrity Check, Restore Drill & Recovery Code Rotation
- *   - SET-6: Staff Users & Role Matrix (via users-panel.js) + System Audit Trail
+ * screens/settings/settings-screen.js — School Configuration, Backup/Restore & Audit (Phase 2/3)
  */
 
 import { apiGet, apiPost } from '../../core/api.js';
-import { set, getBootstrap, setBilingual } from '../../core/state.js';
+import { set, getBootstrap } from '../../core/state.js';
 import { esc, toast, confirm, openModal, closeModal } from '../../core/dom.js';
 import { formatDateTime } from '../../core/format.js';
 import { icon } from '../../core/icons.js';
@@ -52,11 +45,10 @@ function _buildSettingsHtml(st, logs) {
     <div class="page-header">
       <div class="page-header-info">
         <div class="page-header-title">Settings, Backup &amp; Access Control</div>
-        <div class="page-header-desc">Institution profile, module preferences, SQLite safety &amp; staff roles</div>
+        <div class="page-header-desc">Institution profile, print &amp; module preferences, SQLite safety &amp; staff roles</div>
       </div>
     </div>
 
-    <!-- SET-1: Onboarding Checklist -->
     <div class="panel">
       <div class="panel-header">
         <div>
@@ -76,7 +68,6 @@ function _buildSettingsHtml(st, logs) {
     </div>
 
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--sp-5); align-items:start;">
-      <!-- SET-2: School Profile -->
       <div class="panel">
         <div class="panel-header"><div class="panel-title">Institution Profile &amp; Session (SET-2)</div></div>
         <form id="set-profile-form" class="panel-body">
@@ -108,16 +99,25 @@ function _buildSettingsHtml(st, logs) {
         </form>
       </div>
 
-      <!-- SET-3 & SET-4: Preferences & Module Visibility -->
       <div class="panel">
-        <div class="panel-header"><div class="panel-title">Print &amp; Campus Module Preferences (SET-3 / SET-4)</div></div>
+        <div class="panel-header"><div class="panel-title">Print, Bank Voucher &amp; Module Preferences (SET-3 / SET-4)</div></div>
         <div class="panel-body">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label" for="pref-bank-name">Designated Bank Name</label>
+              <input class="form-control" id="pref-bank-name" placeholder="e.g. HBL / Meezan Bank" value="${esc(prefs.bank_name || '')}" />
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label" for="pref-bank-acct">Bank Account / IBAN</label>
+              <input class="form-control" id="pref-bank-acct" placeholder="Account or IBAN No." value="${esc(prefs.bank_account_no || '')}" />
+            </div>
+          </div>
           <div class="setting-toggle-row">
             <div>
-              <div style="font-weight:600;">Bilingual English + Urdu Prints (D3)</div>
-              <div style="font-size:12px; color:var(--siyahi-soft);">Show Urdu labels alongside English on parent-facing profiles &amp; slips</div>
+              <div style="font-weight:600;">Default to 80mm Thermal Receipt Format</div>
+              <div style="font-size:12px; color:var(--siyahi-soft);">Use 80mm POS roll layout instead of A4 official slip by default</div>
             </div>
-            <input type="checkbox" id="pref-bilingual" ${prefs.bilingual_prints ? 'checked' : ''} style="width:18px; height:18px;" />
+            <input type="checkbox" id="pref-thermal" ${prefs.thermal_receipt_default ? 'checked' : ''} style="width:18px; height:18px;" />
           </div>
           <div class="setting-toggle-row">
             <div>
@@ -135,10 +135,10 @@ function _buildSettingsHtml(st, logs) {
           </div>
           <div class="setting-toggle-row">
             <div>
-              <div style="font-weight:600;">Ramazan / Winter Short-Period Timings</div>
+              <div style="font-weight:600;">Short-Period Bell Schedule (Winter / Seasonal)</div>
               <div style="font-size:12px; color:var(--siyahi-soft);">Flag shorter bell schedule across timetable views</div>
             </div>
-            <input type="checkbox" id="pref-ramazan" ${prefs.ramazan_mode ? 'checked' : ''} style="width:18px; height:18px;" />
+            <input type="checkbox" id="pref-short-bell" ${prefs.short_bell_schedule ? 'checked' : ''} style="width:18px; height:18px;" />
           </div>
           <div style="margin-top:14px;">
             <button type="button" class="btn btn-primary" id="btn-save-prefs">Save Preferences</button>
@@ -147,7 +147,6 @@ function _buildSettingsHtml(st, logs) {
       </div>
     </div>
 
-    <!-- SET-5: Backup, Integrity Check & Emergency Recovery Key -->
     <div class="panel">
       <div class="panel-header">
         <div>
@@ -179,10 +178,8 @@ function _buildSettingsHtml(st, logs) {
       </div>
     </div>
 
-    <!-- SET-6: Staff Users & Roles -->
     <div class="panel" id="settings-users-panel"></div>
 
-    <!-- System Audit Log -->
     <div class="panel">
       <div class="panel-header">
         <div>
@@ -235,14 +232,15 @@ function _bindSettingsEvents() {
 
   document.getElementById('btn-save-prefs')?.addEventListener('click', async () => {
     const prefs = {
-      bilingual_prints: document.getElementById('pref-bilingual').checked,
-      enable_hostel:    document.getElementById('pref-hostel').checked,
-      enable_transport: document.getElementById('pref-transport').checked,
-      ramazan_mode:     document.getElementById('pref-ramazan').checked,
+      thermal_receipt_default: document.getElementById('pref-thermal').checked,
+      enable_hostel:           document.getElementById('pref-hostel').checked,
+      enable_transport:        document.getElementById('pref-transport').checked,
+      short_bell_schedule:     document.getElementById('pref-short-bell').checked,
+      bank_name:               document.getElementById('pref-bank-name').value.trim(),
+      bank_account_no:         document.getElementById('pref-bank-acct').value.trim(),
     };
-    await apiPost('/api/settings/preferences', prefs);
-    set({ preferences: prefs });
-    setBilingual(prefs.bilingual_prints);
+    const saved = await apiPost('/api/settings/preferences', prefs);
+    set({ preferences: saved.preferences || prefs });
     buildSidebar(getBootstrap());
     toast('Preferences saved and navigation updated', 'success');
   });

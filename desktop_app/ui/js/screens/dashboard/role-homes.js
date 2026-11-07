@@ -30,7 +30,7 @@ function _renderTeacherHome(d) {
   return `
     <div class="page-header">
       <div class="page-header-info">
-        <div class="page-header-title">Aaj Ka Din — Faculty Workspace</div>
+        <div class="page-header-title">Today's Overview — Faculty Workspace</div>
         <div class="page-header-desc">Daily roll call, scheduled periods, homework &amp; marks entry</div>
       </div>
       <div class="page-header-actions">
@@ -76,7 +76,7 @@ function _renderTeacherHome(d) {
                   <td>${c.att_id
                     ? `<span class="badge badge-info">${esc(c.total_presence ?? c.present ?? 0)}/${esc(c.total_student ?? 0)} (${esc(stateLabel(c.att_state))})</span>`
                     : `<span class="badge badge-warn">Pending Today</span>`}</td>
-                  <td><button class="btn btn-xs btn-primary" data-open-haziri-class="${esc(c.id ?? c.class_id)}">Take Roll Call</button></td>
+                  <td><button class="btn btn-xs btn-primary" data-open-rollcall-class="${esc(c.id ?? c.class_id)}">Take Roll Call</button></td>
                 </tr>`).join('') || `<tr><td colspan="4" style="padding:20px; text-align:center;">No classes assigned</td></tr>`}
             </tbody>
           </table>
@@ -109,7 +109,7 @@ function _renderFeeClerkHome(d) {
   return `
     <div class="page-header">
       <div class="page-header-info">
-        <div class="page-header-title">Aaj Ka Din — Fee Counter &amp; Daily Tally</div>
+        <div class="page-header-title">Today's Overview — Fee Counter &amp; Daily Tally</div>
         <div class="page-header-desc">Quick voucher collection, daily cash tally &amp; overdue balances</div>
       </div>
       <div class="page-header-actions">
@@ -166,9 +166,9 @@ export function attachRoleHomeEvents() {
   document.querySelectorAll('[data-role-goto]').forEach(btn => {
     btn.addEventListener('click', () => navigateTo(btn.getAttribute('data-role-goto')));
   });
-  document.querySelectorAll('[data-open-haziri-class]').forEach(btn => {
+  document.querySelectorAll('[data-open-rollcall-class]').forEach(btn => {
     btn.addEventListener('click', () => {
-      navigateTo('attendance', { selectedClassId: parseInt(btn.getAttribute('data-open-haziri-class'), 10) });
+      navigateTo('attendance', { selectedClassId: parseInt(btn.getAttribute('data-open-rollcall-class'), 10) });
     });
   });
   document.querySelectorAll('[data-open-s360]').forEach(btn => {

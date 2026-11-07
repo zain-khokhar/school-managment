@@ -1,5 +1,5 @@
 /**
- * screens/dashboard/home.js — Role-Aware "Aaj Ka Din" Command Center (Phase 2 — G9, P1..P7)
+ * screens/dashboard/home.js — Role-Aware Daily Command Center (Phase 2 — G9, P1..P7)
  *
  * Fetches `/api/dashboard/home` (< 500ms cached SQL aggregation).
  * Dispatches Principal/Admin home directly and delegates Teacher, Fee Clerk,
@@ -124,8 +124,8 @@ function _buildPrincipalHomeHtml(d) {
         </td>
         <td>${attChip}</td>
         <td>
-          <button class="btn btn-xs btn-secondary" data-open-haziri-class="${esc(cid)}">
-            Haziri ${icon('arrow-right', 12)}
+          <button class="btn btn-xs btn-secondary" data-open-rollcall-class="${esc(cid)}">
+            Roll Call ${icon('arrow-right', 12)}
           </button>
         </td>
       </tr>`;
@@ -142,7 +142,7 @@ function _buildPrincipalHomeHtml(d) {
   return `
     <div class="page-header">
       <div class="page-header-info">
-        <div class="page-header-title">Aaj Ka Din — ${esc(schoolName)}</div>
+        <div class="page-header-title">Today's Overview — ${esc(schoolName)}</div>
         <div class="page-header-desc">${esc(todayLabel)} • ${esc(curYear)}</div>
       </div>
       <div class="page-header-actions">
@@ -187,7 +187,7 @@ function _buildPrincipalHomeHtml(d) {
         <div class="panel">
           <div class="panel-header">
             <div>
-              <div class="panel-title">Attention Required (Tawajjo Talab)</div>
+              <div class="panel-title">Attention Required</div>
               <div class="panel-subtitle">Exceptions, unmarked attendance &amp; pending leave approvals</div>
             </div>
           </div>
@@ -203,7 +203,7 @@ function _buildPrincipalHomeHtml(d) {
           <div class="panel-header">
             <div>
               <div class="panel-title">Class-Wise Attendance &amp; Seat Capacity</div>
-              <div class="panel-subtitle">Click Haziri to open any class roll-call sheet directly</div>
+              <div class="panel-subtitle">Click Roll Call to open any class attendance sheet directly</div>
             </div>
             <button class="btn btn-secondary btn-sm" data-dash-goto="school">All Students</button>
           </div>
@@ -258,9 +258,9 @@ function _attachPrincipalEvents() {
   document.querySelectorAll('[data-dash-goto]').forEach(el => {
     el.addEventListener('click', () => navigateTo(el.getAttribute('data-dash-goto')));
   });
-  document.querySelectorAll('[data-open-haziri-class]').forEach(btn => {
+  document.querySelectorAll('[data-open-rollcall-class]').forEach(btn => {
     btn.addEventListener('click', () => {
-      const cid = parseInt(btn.getAttribute('data-open-haziri-class'), 10);
+      const cid = parseInt(btn.getAttribute('data-open-rollcall-class'), 10);
       navigateTo('attendance', { selectedClassId: cid });
     });
   });

@@ -1,6 +1,6 @@
 /*
  * base.css — Reset, body, typography, accessibility base
- * tokens.css ko pehle load karo (index.html mein upar hona chahiye)
+ * Load tokens.css before base.css in index.html.
  */
 
 /* ── Box Model Reset ──────────────────────────────────────────── */

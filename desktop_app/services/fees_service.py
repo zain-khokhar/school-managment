@@ -272,8 +272,9 @@ class FeesService:
                 """
                 INSERT INTO student_payslip
                 (fees_structure_id, standard_id, division_id, medium_id, register_id,
-                 name, number, student_id, date, total, paid_amount, due_amount, journal_name, state)
-                VALUES (?, ?, ?, ?, ?, ?, '/', ?, ?, 0.0, 0.0, 0.0, ?, 'draft')
+                 name, number, student_id, date, due_date, billing_month,
+                 total, paid_amount, due_amount, journal_name, state)
+                VALUES (?, ?, ?, ?, ?, ?, '/', ?, ?, ?, ?, 0.0, 0.0, 0.0, ?, 'draft')
                 """,
                 (
                     fees_structure_id,
@@ -284,10 +285,18 @@ class FeesService:
                     name.strip(),
                     student_id,
                     dt.isoformat(),
+                    dt.isoformat(),
+                    None,
                     journal_name,
                 ),
             )
-            slip_id = cur.lastrowid
+            slip_id = int(cur.lastrowid)
+            vch_seq = self.db.next_by_code("fee.voucher", conn=conn)
+            seq_tail = vch_seq.split("-")[-1] if "-" in vch_seq else f"{slip_id:05d}"
+            conn.execute(
+                "UPDATE student_payslip SET voucher_no = ? WHERE id = ? AND (voucher_no IS NULL OR voucher_no = '')",
+                (f"VCH-{dt.strftime('%Y%m')}-{seq_tail}", slip_id),
+            )
         return self.get_payslip(slip_id)
 
     def get_payslip(self, slip_id: int) -> dict[str, Any]:
@@ -333,13 +342,17 @@ class FeesService:
                     """,
                     (slip_id, ln["name"], ln["code"], ln["type"], amt),
                 )
+            total_paisa = int(round(total * 100.0))
+            paid_paisa = int(slip.get("paid_paisa") or round(float(slip.get("paid_amount") or 0.0) * 100.0))
+            due_paisa = max(0, total_paisa - paid_paisa)
             conn.execute(
                 """
                 UPDATE student_payslip
-                SET total = ?, due_amount = ?, state = 'confirm'
+                SET total = ?, due_amount = ?, subtotal_paisa = ?, total_paisa = ?,
+                    paid_paisa = ?, due_paisa = ?, state = 'confirm'
                 WHERE id = ?
                 """,
-                (total, total, slip_id),
+                (total, due_paisa / 100.0, total_paisa, total_paisa, paid_paisa, due_paisa, slip_id),
             )
             if slip["register_id"]:
                 reg_tot = conn.execute(
@@ -373,17 +386,51 @@ class FeesService:
                 amt = float(payment_amount)
                 if amt <= 0:
                     raise ValidationError("Payment amount must be greater than zero!")
-                new_paid = float(slip["paid_amount"]) + amt
-                total = float(slip["total"])
-                new_due = max(0.0, total - new_paid)
-                new_state = "paid" if new_due == 0.0 else "pending"
+                amt_paisa = int(round(amt * 100.0))
+                total_paisa = int(slip.get("total_paisa") or round(float(slip["total"]) * 100.0))
+                prev_paid_paisa = int(slip.get("paid_paisa") or round(float(slip["paid_amount"]) * 100.0))
+                new_paid_paisa = prev_paid_paisa + amt_paisa
+                new_due_paisa = max(0, total_paisa - new_paid_paisa)
+                new_paid = new_paid_paisa / 100.0
+                new_due = new_due_paisa / 100.0
+                new_state = "paid" if new_due_paisa == 0 else "pending"
+                today_iso = date.today().isoformat()
                 conn.execute(
                     """
                     UPDATE student_payslip
-                    SET number = ?, paid_amount = ?, due_amount = ?, state = ?, payment_date = ?
+                    SET number = ?, paid_amount = ?, due_amount = ?,
+                        total_paisa = ?, paid_paisa = ?, due_paisa = ?,
+                        state = ?, payment_date = ?
                     WHERE id = ?
                     """,
-                    (num, new_paid, new_due, new_state, date.today().isoformat(), slip_id),
+                    (
+                        num,
+                        new_paid,
+                        new_due,
+                        total_paisa,
+                        new_paid_paisa,
+                        new_due_paisa,
+                        new_state,
+                        today_iso,
+                        slip_id,
+                    ),
+                )
+                rcp_no = self.db.next_by_code("fee.receipt", conn=conn)
+                conn.execute(
+                    """
+                    INSERT INTO fee_payment
+                    (receipt_no, payslip_id, student_id, amount_paisa, payment_mode, reference, note,
+                     paid_at, payment_date, received_by_id, received_by)
+                    VALUES (?, ?, ?, ?, 'cash', '', 'Fee counter payment', ?, ?, NULL, 'system')
+                    """,
+                    (
+                        rcp_no,
+                        slip_id,
+                        int(slip["student_id"]),
+                        amt_paisa,
+                        f"{today_iso}T00:00:00Z",
+                        today_iso,
+                    ),
                 )
         return self.get_payslip(slip_id)
 

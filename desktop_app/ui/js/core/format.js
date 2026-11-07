@@ -1,13 +1,11 @@
 /**
- * format.js — Display formatting utilities
- * Currency (PKR), dates (Urdu/English), percentages, durations.
- * Koi hard-coded string nahi — sab yahan se aaye.
+ * format.js — Display Formatting Utilities
+ *
+ * Standardized currency (PKR), dates, percentages, student names, and calm status badges.
  */
 
-// ─── Currency ─────────────────────────────────────────────────────────────────
-
 /**
- * PKR amount format karo — Rs. 1,500 or Rs. 1,500.50
+ * Format PKR amount — e.g. "Rs. 1,500" or "Rs. 1,500.50".
  * @param {number|string|null} val
  * @param {boolean} [showDecimals=false]
  * @returns {string}
@@ -23,8 +21,19 @@ export function formatPKR(val, showDecimals = false) {
 }
 
 /**
- * Compact amount — Rs. 1.2K, Rs. 45K, Rs. 1.2M
- * KPI cards ke liye jab space kam ho
+ * Format exact integer paisa as PKR ("Rs. 1,500" when whole rupees, "Rs. 1,500.55" when fractional).
+ * @param {number|null|undefined} paisa
+ * @returns {string}
+ */
+export function formatPaisa(paisa) {
+  const p = Number(paisa || 0);
+  if (!Number.isFinite(p)) return 'Rs.\u00A00';
+  const hasCents = Math.abs(Math.trunc(p)) % 100 !== 0;
+  return formatPKR(p / 100, hasCents);
+}
+
+/**
+ * Compact PKR amount — "Rs. 45K", "Rs. 1.2M".
  * @param {number|string|null} val
  * @returns {string}
  */
@@ -36,29 +45,21 @@ export function formatPKRCompact(val) {
   return formatPKR(n);
 }
 
-// ─── Dates ────────────────────────────────────────────────────────────────────
-
 const MONTHS_EN = [
   'Jan','Feb','Mar','Apr','May','Jun',
   'Jul','Aug','Sep','Oct','Nov','Dec'
 ];
 
-/**
- * Date string parse karo — 'YYYY-MM-DD' ya JS Date se
- * @param {string|Date|null} val
- * @returns {Date|null}
- */
 function parseDate(val) {
   if (!val) return null;
   if (val instanceof Date) return isNaN(val) ? null : val;
-  // 'YYYY-MM-DD' — parse as local (not UTC) to avoid timezone shift
   const m = String(val).match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (!m) return null;
   return new Date(+m[1], +m[2] - 1, +m[3]);
 }
 
 /**
- * Short date — "6 Nov 2026"
+ * Short date — "6 Nov 2026".
  * @param {string|Date|null} val
  * @returns {string}
  */
@@ -69,7 +70,7 @@ export function formatDate(val) {
 }
 
 /**
- * Relative date — "aaj", "kal", "3 din pehle"
+ * Relative day label in English — "Today", "Tomorrow", "Yesterday", "3 days ago".
  * @param {string|Date|null} val
  * @returns {string}
  */
@@ -79,15 +80,15 @@ export function formatRelative(val) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const diff = Math.round((d - today) / 86_400_000);
-  if (diff === 0)   return 'Aaj';
-  if (diff === 1)   return 'Kal';
-  if (diff === -1)  return 'Kal (guzra)';
-  if (diff > 1)     return `${diff} din baad`;
-  return `${Math.abs(diff)} din pehle`;
+  if (diff === 0)  return 'Today';
+  if (diff === 1)  return 'Tomorrow';
+  if (diff === -1) return 'Yesterday';
+  if (diff > 1)    return `In ${diff} days`;
+  return `${Math.abs(diff)} days ago`;
 }
 
 /**
- * ISO timestamp to short time — "8:30 AM"
+ * ISO timestamp to short time — "8:30 AM".
  * @param {string|null} iso
  * @returns {string}
  */
@@ -103,7 +104,7 @@ export function formatTime(iso) {
 }
 
 /**
- * ISO timestamp to compact date + time — "6 Nov 2026, 2:10 PM"
+ * ISO timestamp to compact date + time — "6 Nov 2026, 2:10 PM".
  * @param {string|null} iso
  * @returns {string}
  */
@@ -115,10 +116,8 @@ export function formatDateTime(iso) {
   return `${d.getDate()} ${MONTHS_EN[d.getMonth()]} ${d.getFullYear()}, ${formatTime(d.toISOString())}`;
 }
 
-// ─── Percentage ───────────────────────────────────────────────────────────────
-
 /**
- * Percentage format — "87%"
+ * Percentage format — "87%".
  * @param {number|string|null} val
  * @param {number} [decimals=0]
  * @returns {string}
@@ -129,10 +128,8 @@ export function formatPct(val, decimals = 0) {
   return `${n.toFixed(decimals)}%`;
 }
 
-// ─── Name ─────────────────────────────────────────────────────────────────────
-
 /**
- * Full naam banao — first + middle + last (empty parts skip karo)
+ * Concatenate student full name cleanly.
  * @param {object} student
  * @returns {string}
  */
@@ -143,9 +140,6 @@ export function fullName(student) {
     .trim() || '—';
 }
 
-// ─── Status → badge text mapping ──────────────────────────────────────────────
-
-/** Backend state values ko human-readable English mein convert karo */
 const STATE_LABELS = {
   draft:          'Draft',
   done:           'Enrolled',
@@ -155,8 +149,10 @@ const STATE_LABELS = {
   cancel:         'Cancelled',
   cancelled:      'Cancelled',
   paid:           'Paid',
-  confirm:        'Confirmed',
-  pending:        'Due',
+  confirm:        'Issued',
+  pending:        'Partial / Due',
+  rolled_over:    'Carried Forward',
+  reversed:       'Reversed',
   validate:       'Validated',
   approve:        'Approved',
   toapprove:      'Pending Approval',
@@ -177,11 +173,6 @@ const STATE_LABELS = {
   're-evaluation':'Re-Eval',
 };
 
-/**
- * State string ko label mein convert karo
- * @param {string} state
- * @returns {string}
- */
 export function stateLabel(state) {
   return STATE_LABELS[String(state || '').toLowerCase()] || state;
 }
@@ -190,9 +181,9 @@ export function stateLabel(state) {
  * Calm Enterprise Badge Mapping (Section 9.2):
  *   - badge-success: strictly financial settlement / approval / pass
  *   - badge-info:    routine active operational states
- *   - badge-warn:    action-required queues
- *   - badge-danger:  true exceptions / rejections / fines
- *   - badge-neutral: quiet draft / archival states
+ *   - badge-warn:    action-required / partial due queues
+ *   - badge-danger:  true exceptions / reversals / rejections / fines
+ *   - badge-neutral: quiet draft / archival / carried-forward states
  * @param {string} state
  * @returns {'badge-success'|'badge-warn'|'badge-danger'|'badge-info'|'badge-neutral'}
  */
@@ -207,9 +198,8 @@ export function stateBadgeClass(state) {
   if (['pending', 'toapprove', 'issue', 're-evaluation', 're-evaluation_confirm', 'expire'].includes(s)) {
     return 'badge-warn';
   }
-  if (['cancel', 'cancelled', 'terminate', 'reject', 'fail', 'fine', 'lost'].includes(s)) {
+  if (['cancel', 'cancelled', 'terminate', 'reject', 'fail', 'fine', 'lost', 'reversed'].includes(s)) {
     return 'badge-danger';
   }
   return 'badge-neutral';
 }
-

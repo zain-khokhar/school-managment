@@ -8,13 +8,14 @@
     content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;" />
   <title>School Management ERP</title>
 
-  <!-- Design system — load order matters ("Kaghaz aur Siyahi") -->
+  <!-- Design system — load order matters -->
   <link rel="stylesheet" href="/static/css/tokens.css" />
   <link rel="stylesheet" href="/static/css/base.css" />
   <link rel="stylesheet" href="/static/css/layout.css" />
   <link rel="stylesheet" href="/static/css/components.css" />
   <link rel="stylesheet" href="/static/css/feedback-and-screens.css" />
   <link rel="stylesheet" href="/static/css/phase2.css" />
+  <link rel="stylesheet" href="/static/css/fees-and-print.css" />
 </head>
 
 <body>
@@ -55,7 +56,7 @@
       <!-- Topbar -->
       <header class="topbar" role="banner" style="position:relative;">
         <div class="topbar-left">
-          <h1 class="page-title" id="page-title">Aaj Ka Din</h1>
+          <h1 class="page-title" id="page-title">Overview</h1>
           <span class="page-breadcrumb" id="page-breadcrumb" aria-hidden="true"></span>
         </div>
 
@@ -126,6 +127,9 @@
 
   <!-- ── Toast Container ──────────────────────────────────────── -->
   <div class="toast-container" id="toast-container" aria-live="polite" aria-atomic="false"></div>
+
+  <!-- ── Isolated Print Mount (Bank Vouchers, A4 & 80mm Receipts) ── -->
+  <div id="print-mount" class="print-mount" aria-hidden="true"></div>
 
   <!-- ── Scripts (Strangler-Fig Order: Legacy Bridge first, then ES Module Shell) ── -->
   <script src="/static/app.js"></script>

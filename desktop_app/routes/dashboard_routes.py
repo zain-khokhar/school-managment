@@ -1,5 +1,5 @@
 """
-Role-Aware Dashboard ("Aaj Ka Din"), Student 360° & Audit Log Routes (Phase 2 — G9, S360).
+Role-Aware Dashboard, Student 360° & Audit Log Routes (Phase 2 — G9, S360).
 """
 
 from __future__ import annotations

@@ -1,7 +1,7 @@
 /*
- * tokens.css — Kaghaz aur Siyahi Design Tokens
- * Har color WCAG AA compliant hai (minimum 4.5:1 contrast ratio)
- * Koi naya color mat add karo — sirf yahan se use karo
+ * tokens.css — Warm Paper & Ink Enterprise Design Tokens
+ * All color pairs meet WCAG AA contrast requirements (minimum 4.5:1).
+ * Use semantic tokens exclusively across stylesheets.
  */
 
 :root {

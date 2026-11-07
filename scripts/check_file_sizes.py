@@ -19,7 +19,7 @@ def check_files() -> int:
     violations: list[str] = []
     checked = 0
 
-    print("=== Phase 1 File Size & Modularity Check ===")
+    print("=== Anti-Monolith File Size & Modularity Check (Phases 1-3) ===")
 
     for js_file in sorted((ROOT / "desktop_app" / "ui" / "js").rglob("*.js")):
         lines = len(js_file.read_text(encoding="utf-8").splitlines())
@@ -48,15 +48,18 @@ def check_files() -> int:
         if lines > 400:
             violations.append(f"{rel} has {lines} lines (max 400)")
 
-    phase2_services = [
+    phase_services = [
         "audit_service.py",
         "auth_service.py",
         "backup_service.py",
         "dashboard_service.py",
         "settings_service.py",
         "student360_service.py",
+        "fee_engine_service.py",
+        "fee_rules_and_print.py",
+        "family_service.py",
     ]
-    for svc_name in phase2_services:
+    for svc_name in phase_services:
         svc_file = ROOT / "desktop_app" / "services" / svc_name
         if not svc_file.exists():
             continue
@@ -68,14 +71,14 @@ def check_files() -> int:
         if lines > 600:
             violations.append(f"{rel} has {lines} lines (max 600)")
 
-    print(f"\nChecked {checked} Phase 1 & Phase 2 files.")
+    print(f"\nChecked {checked} modular files.")
     if violations:
         print("FAILED violations:")
         for v in violations:
             print(f"  - {v}")
         return 1
 
-    print("ALL PHASE 1 FILES WITHIN STRICT ANTI-MONOLITH BUDGET!")
+    print("ALL MODULAR FILES WITHIN STRICT ANTI-MONOLITH BUDGET!")
     return 0
 
 

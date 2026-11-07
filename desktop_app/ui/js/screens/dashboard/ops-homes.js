@@ -16,7 +16,7 @@ export function renderFrontDeskHome(d) {
   return `
     <div class="page-header">
       <div class="page-header-info">
-        <div class="page-header-title">Aaj Ka Din — Admissions &amp; Front Desk</div>
+        <div class="page-header-title">Today's Overview — Admissions &amp; Front Desk</div>
         <div class="page-header-desc">Live class seat availability &amp; incomplete admission queue</div>
       </div>
       <div class="page-header-actions">
@@ -95,7 +95,7 @@ export function renderExamHome(d) {
   return `
     <div class="page-header">
       <div class="page-header-info">
-        <div class="page-header-title">Aaj Ka Din — Examination Cell</div>
+        <div class="page-header-title">Today's Overview — Examination Cell</div>
         <div class="page-header-desc">Marks entry completion, result verification &amp; re-evaluation queue</div>
       </div>
       <div class="page-header-actions">

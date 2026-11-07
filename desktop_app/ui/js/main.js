@@ -1,10 +1,10 @@
 /**
- * main.js — School ERP Desktop App Entry Point (Phase 2)
+ * main.js — School ERP Desktop App Entry Point (Phase 2 & Phase 3)
  *
  * Coordinates:
  *   - Offline Auth Gate & First-Run Recovery Code Setup (`login-screen.js`)
- *   - Role-Aware Navigation & 5 "Aaj Ka Din" Homes (`home.js`, `role-homes.js`)
- *   - Student 360° Profile (`student-profile.js`), Attendance, Students, Settings
+ *   - Role-Aware Navigation & 5 Daily Command Center Homes (`home.js`, `role-homes.js`)
+ *   - Student 360° Profile (`student-profile.js`), Attendance, Fees & Family Ledger, Settings
  *   - Topbar Backup Health Pill, User/Role Menu, and Global Search (Ctrl+K)
  */
 
@@ -21,6 +21,7 @@ import { renderDashboardScreen } from './screens/dashboard/home.js';
 import { renderAttendanceScreen, attachAttendanceEvents } from './screens/attendance/daily-sheet.js';
 import { renderStudentsScreen } from './screens/school/students-list.js';
 import { renderStudentProfileScreen } from './screens/school/student-profile.js';
+import { renderFeesScreen } from './screens/fees/fees-workspace.js';
 import { renderSettingsScreen } from './screens/settings/settings-screen.js';
 
 async function loadBootstrapData() {
@@ -53,6 +54,7 @@ function registerAllScreens() {
   registerScreen('dashboard',  async () => renderDashboardScreen());
   registerScreen('school',     async () => renderStudentsScreen());
   registerScreen('student360', async () => renderStudentProfileScreen());
+  registerScreen('fees',       async () => renderFeesScreen());
   registerScreen('settings',   async () => renderSettingsScreen());
 
   registerScreen('attendance', async () => {
@@ -61,7 +63,7 @@ function registerAllScreens() {
     return html;
   });
 
-  const legacyTabs = ['fees', 'assignment', 'timetable', 'exam', 'library', 'event', 'hostel', 'transport'];
+  const legacyTabs = ['assignment', 'timetable', 'exam', 'library', 'event', 'hostel', 'transport'];
   for (const tab of legacyTabs) {
     registerScreen(tab, () => {
       if (window.ERP_LEGACY && typeof window.ERP_LEGACY.renderTab === 'function') {

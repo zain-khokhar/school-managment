@@ -2,7 +2,7 @@
  * attendance/daily-sheet.js — Roll-Call Controller & State (Phase 1/2, G1 Fix)
  *
  * Supports pre-selecting a class (`get('selectedClassId')`) when launched from
- * Principal or Teacher "Aaj Ka Din" home in 1 click. Zero Unicode emojis.
+ * Principal or Teacher Daily Overview home in 1 click. Zero Unicode emojis.
  */
 
 import { apiGet, apiPost } from '../../core/api.js';

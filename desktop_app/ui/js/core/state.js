@@ -14,14 +14,19 @@ const _state = {
   currentSchool: null,
   bilingualMode: false,
   preferences: {
-    bilingual_prints: false,
+    thermal_receipt_default: false,
     enable_hostel: true,
     enable_transport: true,
-    ramazan_mode: false,
+    short_bell_schedule: false,
+    bank_name: '',
+    bank_account_title: '',
+    bank_account_no: '',
   },
   backupHealth: null,
   selectedStudentId: null,
   selectedClassId: null,
+  feesSubTab: 'vouchers',
+  feesQuery: '',
 };
 
 const _listeners = new Map();

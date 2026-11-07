@@ -1,5 +1,5 @@
 """
-Role-Aware "Aaj Ka Din" Dashboards & Student 360° Service (Phase 2 — G9, S8, S360-1..8).
+Role-Aware Daily Overview Dashboards & Student 360° Service (Phase 2 — G9, S8, S360-1..8).
 
 Implements 5 focused operational home views:
   1. Principal / Admin (P1..P7 + onboarding checklist)
@@ -50,7 +50,7 @@ class DashboardService:
             self._cache.clear()
 
     def get_role_home(self, user: dict[str, Any]) -> dict[str, Any]:
-        """Return role-specific 'Aaj Ka Din' payload within the <500ms budget."""
+        """Return role-specific daily overview payload within the <500ms budget."""
         t0 = time.perf_counter()
         raw_role = user.get("role", "principal")
         eff_role = "principal" if raw_role in ("admin", "principal") else raw_role
@@ -94,21 +94,25 @@ class DashboardService:
         next7_iso = (today + timedelta(days=7)).isoformat()
 
         with self.db.connection() as conn:
-            # P1: Today's fee collection vs yesterday
+            # P1: Today's fee collection vs yesterday (from net active fee_payment receipts)
             p1_today = conn.execute(
                 """
-                SELECT COALESCE(SUM(paid_amount), 0.0) AS amt, COUNT(*) AS cnt
-                FROM student_payslip
-                WHERE payment_date = ? AND paid_amount > 0
+                SELECT COALESCE(SUM(amount_paisa), 0) / 100.0 AS amt, COUNT(*) AS cnt
+                FROM fee_payment
+                WHERE payment_date = ? AND reversed_at IS NULL
                 """,
                 (today_iso,),
             ).fetchone()
             p1_yest = conn.execute(
-                "SELECT COALESCE(SUM(paid_amount), 0.0) AS amt FROM student_payslip WHERE payment_date = ?",
+                """
+                SELECT COALESCE(SUM(amount_paisa), 0) / 100.0 AS amt
+                FROM fee_payment
+                WHERE payment_date = ? AND reversed_at IS NULL
+                """,
                 (yesterday_iso,),
             ).fetchone()
             total_collected = conn.execute(
-                "SELECT COALESCE(SUM(paid_amount), 0.0) AS amt FROM student_payslip"
+                "SELECT COALESCE(SUM(amount_paisa), 0) / 100.0 AS amt FROM fee_payment WHERE reversed_at IS NULL"
             ).fetchone()["amt"]
 
             # P2 & P5: Classes + Today's Attendance
@@ -223,7 +227,7 @@ class DashboardService:
                     "detail": sub_txt,
                     "class_id": c["id"],
                     "action_tab": "attendance",
-                    "action_label": "Open Haziri",
+                    "action_label": "Open Roll Call",
                 }
             )
         for ex in pending_exams:
@@ -397,52 +401,62 @@ class DashboardService:
         overdue_cutoff = (today - timedelta(days=30)).isoformat()
 
         with self.db.connection() as conn:
-            tally = conn.execute(
+            pmt_tally = conn.execute(
                 """
-                SELECT COALESCE(SUM(CASE WHEN payment_date = ? THEN paid_amount ELSE 0 END), 0.0) AS today_amount,
-                       COALESCE(SUM(CASE WHEN payment_date = ? THEN paid_amount ELSE 0 END), 0.0) AS yesterday_amount,
-                       SUM(CASE WHEN payment_date = ? AND paid_amount > 0 THEN 1 ELSE 0 END) AS receipts_today,
-                       COALESCE(SUM(CASE WHEN state IN ('confirm', 'pending') THEN due_amount ELSE 0 END), 0.0) AS total_due,
-                       COUNT(DISTINCT CASE WHEN state IN ('confirm', 'pending') AND due_amount > 0 THEN student_id END) AS defaulter_count,
-                       COALESCE(SUM(CASE WHEN state IN ('confirm', 'pending') AND date <= ? THEN due_amount ELSE 0 END), 0.0) AS overdue_30d_amount
-                FROM student_payslip
+                SELECT COALESCE(SUM(CASE WHEN payment_date = ? THEN amount_paisa ELSE 0 END), 0) / 100.0 AS today_amount,
+                       COALESCE(SUM(CASE WHEN payment_date = ? THEN amount_paisa ELSE 0 END), 0) / 100.0 AS yesterday_amount,
+                       SUM(CASE WHEN payment_date = ? THEN 1 ELSE 0 END) AS receipts_today
+                FROM fee_payment
+                WHERE reversed_at IS NULL
                 """,
-                (today_iso, yesterday_iso, today_iso, overdue_cutoff),
+                (today_iso, yesterday_iso, today_iso),
+            ).fetchone()
+            dues_tally = conn.execute(
+                """
+                SELECT COALESCE(SUM(due_amount), 0.0) AS total_due,
+                       COUNT(DISTINCT CASE WHEN due_amount > 0 THEN student_id END) AS defaulter_count,
+                       COALESCE(SUM(CASE WHEN COALESCE(due_date, date) <= ? THEN due_amount ELSE 0 END), 0.0) AS overdue_30d_amount
+                FROM student_payslip
+                WHERE state IN ('confirm', 'pending')
+                """,
+                (overdue_cutoff,),
             ).fetchone()
 
             defaulters = conn.execute(
                 """
-                SELECT p.id, p.number, p.name, p.date, p.total, p.paid_amount, p.due_amount, p.state,
+                SELECT p.id, COALESCE(NULLIF(p.voucher_no, ''), p.number) AS number, p.name,
+                       p.date, p.due_date, p.total, p.paid_amount, p.due_amount, p.state,
                        s.id AS student_id, s.pid, s.student_name, s.last, s.contact_mobile,
                        ss.name AS class_name
                 FROM student_payslip p
                 JOIN student_student s ON s.id = p.student_id
                 LEFT JOIN school_standard ss ON ss.id = s.standard_id
                 WHERE p.state IN ('confirm', 'pending') AND p.due_amount > 0
-                ORDER BY p.date ASC, p.due_amount DESC LIMIT 25
+                ORDER BY COALESCE(p.due_date, p.date) ASC, p.due_amount DESC LIMIT 25
                 """
             ).fetchall()
 
             recent_paid = conn.execute(
                 """
-                SELECT p.id, p.number, p.paid_amount, p.payment_date, p.state,
+                SELECT fp.id, fp.receipt_no AS number, (fp.amount_paisa / 100.0) AS paid_amount,
+                       fp.payment_date, fp.payment_mode, 'paid' AS state,
                        s.student_name, s.last, ss.name AS class_name
-                FROM student_payslip p
-                JOIN student_student s ON s.id = p.student_id
+                FROM fee_payment fp
+                JOIN student_student s ON s.id = fp.student_id
                 LEFT JOIN school_standard ss ON ss.id = s.standard_id
-                WHERE p.paid_amount > 0
-                ORDER BY p.payment_date DESC, p.id DESC LIMIT 10
+                WHERE fp.reversed_at IS NULL
+                ORDER BY fp.id DESC LIMIT 10
                 """
             ).fetchall()
 
         return {
             "today_tally": {
-                "today_amount": float(tally["today_amount"] or 0.0),
-                "yesterday_amount": float(tally["yesterday_amount"] or 0.0),
-                "receipts_today": int(tally["receipts_today"] or 0),
-                "total_due": float(tally["total_due"] or 0.0),
-                "defaulter_count": int(tally["defaulter_count"] or 0),
-                "overdue_30d_amount": float(tally["overdue_30d_amount"] or 0.0),
+                "today_amount": float(pmt_tally["today_amount"] or 0.0),
+                "yesterday_amount": float(pmt_tally["yesterday_amount"] or 0.0),
+                "receipts_today": int(pmt_tally["receipts_today"] or 0),
+                "total_due": float(dues_tally["total_due"] or 0.0),
+                "defaulter_count": int(dues_tally["defaulter_count"] or 0),
+                "overdue_30d_amount": float(dues_tally["overdue_30d_amount"] or 0.0),
             },
             "defaulters": [dict(r) for r in defaulters],
             "recent_payments": [dict(r) for r in recent_paid],

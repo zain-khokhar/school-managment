@@ -1,5 +1,5 @@
 /**
- * attendance/daily-sheet-view.js — Pure HTML Builders for Haziri Screen (Phase 1/2)
+ * attendance/daily-sheet-view.js — Pure HTML Builders for Daily Roll-Call Screen (Phase 1/2)
  *
  * Uses geometric stroke SVG icons (core/icons.js) and calm paper/ink roll-call styling.
  */
@@ -31,7 +31,7 @@ export function buildAttendanceShellHtml(classes) {
   return `
     <div class="page-header">
       <div class="page-header-info">
-        <div class="page-header-title">Daily Attendance (Haziri)</div>
+        <div class="page-header-title">Daily Attendance</div>
         <div class="page-header-desc">${esc(today)}</div>
       </div>
       <div class="page-header-actions">

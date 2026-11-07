@@ -1,0 +1,322 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+ * fees-and-print.css — Phase 3 Fees Workspace, Family Ledger & Print System
+ *
+ * Strict Enterprise Restraint:
+ *   - All monetary figures in deep ink (`--siyahi`) with `tabular-nums`.
+ *   - Zero decorative gradients, zero neon red/green numbers.
+ *   - Isolated `#print-mount` for 3-Part Bank Vouchers, A4 Slips & 80mm Rolls.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Fees Workspace Controls & Sub-Navigation ──────────────────────────── */
+.fees-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--rule-line);
+  background: var(--surface-sunken, #FAF8F5);
+  align-items: center;
+}
+
+.fees-filter-bar .form-control {
+  height: 34px;
+  font-size: 13px;
+}
+
+.undo-receipt-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  margin-bottom: var(--sp-4);
+  background: var(--surface);
+  border: 1px solid var(--brand, #1D4ED8);
+  border-left-width: 4px;
+  border-radius: var(--radius);
+  font-size: 13px;
+}
+
+.tally-mode-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}
+
+.tally-mode-card {
+  background: var(--surface);
+  border: 1px solid var(--rule-line);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+
+.tally-mode-label {
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--siyahi-soft);
+  margin-bottom: 4px;
+}
+
+.tally-mode-val {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--siyahi);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Family Ledger Split View ──────────────────────────────────────────── */
+.family-split-grid {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: var(--sp-4);
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .family-split-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.family-list-scroll {
+  max-height: 560px;
+  overflow-y: auto;
+}
+
+.family-card-row {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--rule-line);
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.family-card-row:hover {
+  background: var(--surface-hover, #F5F2EC);
+}
+
+.family-card-row.active {
+  background: #EFF4FF;
+  border-left: 3px solid var(--brand, #1D4ED8);
+  padding-left: 13px;
+}
+
+/* ── In-App Print Preview Box (inside Modal) ───────────────────────────── */
+.print-preview-stage {
+  background: #E7E5E4;
+  padding: 16px;
+  border-radius: var(--radius);
+  max-height: 62vh;
+  overflow: auto;
+  border: 1px solid var(--rule-line);
+}
+
+/* ── Shared Voucher & Receipt Typography (Preview + Print) ─────────────── */
+.voucher-sheet-3up {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  background: #FFFFFF;
+  color: #18181B;
+  border: 1px solid #27272A;
+  font-family: var(--font-sans, system-ui, -apple-system, sans-serif);
+  font-size: 11px;
+  line-height: 1.35;
+  margin-bottom: 16px;
+}
+
+.voucher-copy {
+  padding: 12px 14px;
+  border-right: 1.5px dashed #71717A;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.voucher-copy:last-child {
+  border-right: none;
+}
+
+.vch-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 1.5px solid #18181B;
+  padding-bottom: 6px;
+  margin-bottom: 6px;
+}
+
+.vch-school-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.vch-copy-tag {
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  border: 1px solid #18181B;
+  padding: 1px 6px;
+  border-radius: 2px;
+  white-space: nowrap;
+}
+
+.vch-bank-box {
+  background: #F4F4F5;
+  border: 1px solid #D4D4D8;
+  padding: 4px 8px;
+  font-size: 10px;
+  margin-bottom: 6px;
+}
+
+.vch-meta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px 8px;
+  font-size: 10.5px;
+  margin-bottom: 8px;
+}
+
+.vch-lines-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 8px;
+  font-size: 10.5px;
+}
+
+.vch-lines-table th,
+.vch-lines-table td {
+  border-bottom: 1px solid #E4E4E7;
+  padding: 3px 2px;
+}
+
+.vch-lines-table th {
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 1px solid #27272A;
+}
+
+.vch-totals-box {
+  border-top: 1.5px solid #18181B;
+  padding-top: 5px;
+  font-size: 10.5px;
+}
+
+.vch-total-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 1.5px 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.vch-total-row.strong {
+  font-weight: 700;
+  font-size: 11.5px;
+}
+
+.vch-footer-bar {
+  margin-top: 10px;
+  padding-top: 6px;
+  border-top: 1px dashed #A1A1AA;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  font-size: 9.5px;
+  color: #3F3F46;
+}
+
+/* ── Official A4 Fee Receipt & 80mm Thermal Slip ───────────────────────── */
+.receipt-a4 {
+  background: #FFFFFF;
+  color: #18181B;
+  border: 1px solid #27272A;
+  padding: 22px 26px;
+  max-width: 720px;
+  margin: 0 auto;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.receipt-thermal {
+  background: #FFFFFF;
+  color: #000000;
+  width: 74mm;
+  margin: 0 auto;
+  padding: 10px 8px;
+  border: 1px dashed #71717A;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.thermal-hr {
+  border: 0;
+  border-top: 1px dashed #000000;
+  margin: 6px 0;
+}
+
+.thermal-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Isolated Print Mount & @media print Rules ─────────────────────────── */
+.print-mount {
+  display: none;
+}
+
+@media print {
+  @page {
+    margin: 7mm;
+  }
+
+  html, body {
+    background: #FFFFFF !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  body.print-mode-active .app-shell,
+  body.print-mode-active .modal-backdrop,
+  body.print-mode-active .toast-container,
+  body.print-mode-active #auth-overlay {
+    display: none !important;
+  }
+
+  body.print-mode-active .print-mount {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  .voucher-sheet-3up {
+    page-break-after: always;
+    break-after: page;
+    page-break-inside: avoid;
+    break-inside: avoid;
+    margin-bottom: 0;
+  }
+
+  .voucher-sheet-3up:last-child {
+    page-break-after: auto;
+    break-after: auto;
+  }
+
+  .receipt-thermal {
+    border: none !important;
+    width: 72mm !important;
+    padding: 2mm !important;
+  }
+}
+

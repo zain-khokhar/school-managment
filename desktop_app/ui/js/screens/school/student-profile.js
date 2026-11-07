@@ -12,7 +12,6 @@ import { apiGet, apiPost } from '../../core/api.js';
 import { get } from '../../core/state.js';
 import { esc, toast, confirm } from '../../core/dom.js';
 import { fullName, formatPKR, formatDate, formatDateTime, stateLabel, stateBadgeClass } from '../../core/format.js';
-import { bilingualHtml } from '../../core/i18n.js';
 import { icon } from '../../core/icons.js';
 import { navigateTo } from '../../core/router.js';
 import { performStudentAction } from './student-modal.js';
@@ -187,7 +186,7 @@ function _renderSubTab(tab, d) {
   }
 
   // Default: Bio, Guardians & Siblings (S360-3)
-  const parents = (d.parents || []).map(p => `<div style="margin-bottom:6px;"><strong>${esc(p.name)}</strong> (${esc(p.relation_id || 'Guardian')}) — ${esc(p.mobile || p.phone || 'No phone')}</div>`).join('');
+  const parents = (d.parents || []).map(p => `<div style="margin-bottom:6px;"><strong>${esc(p.name)}</strong> (${esc(p.relation_name || p.relation_id || 'Guardian')}) — ${esc(p.phone || p.mobile || 'No phone')}</div>`).join('');
   const siblings = (d.siblings || []).map(sib => `
     <button type="button" class="btn btn-secondary btn-xs" data-sib-id="${esc(sib.id)}" style="margin-right:6px; margin-bottom:4px;">
       ${esc(sib.student_name)} ${esc(sib.last || '')} (${esc(sib.class_name || sib.pid)})
@@ -195,16 +194,19 @@ function _renderSubTab(tab, d) {
 
   return `
     <div class="panel-body" style="display:grid; grid-template-columns:1fr 1fr; gap:16px; font-size:13.5px;">
-      <div><div style="color:var(--siyahi-soft); font-size:12px;">${bilingualHtml('stu_dob')}</div><strong>${esc(formatDate(s.date_of_birth))}</strong></div>
-      <div><div style="color:var(--siyahi-soft); font-size:12px;">${bilingualHtml('stu_gender')}</div><strong style="text-transform:capitalize;">${esc(s.gender || '—')}</strong></div>
-      <div><div style="color:var(--siyahi-soft); font-size:12px;">${bilingualHtml('stu_mobile')}</div><strong>${esc(s.contact_mobile || s.contact_phone || '—')}</strong></div>
+      <div><div style="color:var(--siyahi-soft); font-size:12px;">Date of Birth</div><strong>${esc(formatDate(s.date_of_birth))}</strong></div>
+      <div><div style="color:var(--siyahi-soft); font-size:12px;">Gender</div><strong style="text-transform:capitalize;">${esc(s.gender || '—')}</strong></div>
+      <div><div style="color:var(--siyahi-soft); font-size:12px;">Mobile</div><strong>${esc(s.contact_mobile || s.contact_phone || '—')}</strong></div>
       <div><div style="color:var(--siyahi-soft); font-size:12px;">Admission Date</div><strong>${esc(formatDate(s.admission_date))}</strong></div>
       <div style="grid-column:1/-1; padding-top:8px; border-top:1px solid var(--rule-line);">
         <div style="color:var(--siyahi-soft); font-size:12px; margin-bottom:4px;">Parents / Guardians</div>
         ${parents || '<span style="color:var(--siyahi-soft);">No linked guardian record</span>'}
       </div>
       <div style="grid-column:1/-1; padding-top:8px; border-top:1px solid var(--rule-line);">
-        <div style="color:var(--siyahi-soft); font-size:12px; margin-bottom:6px;">Siblings (Khandani Khata Link)</div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <span style="color:var(--siyahi-soft); font-size:12px;">Siblings &amp; Family Ledger</span>
+          <button type="button" class="btn btn-secondary btn-xs" id="s360-open-family-ledger" data-fam-query="${esc(s.contact_mobile || s.pid || '')}">${icon('fees', 13)} Open Family Ledger</button>
+        </div>
         ${siblings || '<span style="color:var(--siyahi-soft);">No siblings detected on shared guardian/mobile</span>'}
       </div>
     </div>`;
@@ -238,6 +240,10 @@ function _bindProfileEvents() {
 }
 
 function _bindDynamicTabEvents() {
+  document.getElementById('s360-open-family-ledger')?.addEventListener('click', e => {
+    const q = e.currentTarget.getAttribute('data-fam-query') || '';
+    navigateTo('fees', { feesSubTab: 'family', feesQuery: q });
+  });
   document.querySelectorAll('[data-sib-id]').forEach(btn => {
     btn.addEventListener('click', () => {
       navigateTo('student360', { selectedStudentId: parseInt(btn.getAttribute('data-sib-id'), 10) });

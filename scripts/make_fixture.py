@@ -121,12 +121,15 @@ def run_benchmark(student_count: int = 1000) -> int:
             assert res.status_code == 200, res.get_data(as_text=True)
             return (time.perf_counter() - s) * 1000.0
 
-        # Cold (uncached) dashboard query + list + search + Student 360
+        # Cold (uncached) dashboard query + list + search + Student 360 + Phase 3 Fees & Families
         dash_cold_ms = measure("/api/dashboard/home")
         dash_warm_ms = measure("/api/dashboard/home")
         list_ms = measure("/api/students/list?page=1&per_page=50")
         search_ms = measure("/api/search?q=Student50")
         s360_ms = measure("/api/students/10/360")
+        vouchers_ms = measure("/api/fees/vouchers?page=1&per_page=30")
+        families_ms = measure("/api/families?q=Student50")
+        tally_ms = measure("/api/fees/tally")
 
         print(f"=== 1,000-Student Benchmark ({student_count} students generated in {gen_ms:.0f} ms) ===")
         print(f"  /api/dashboard/home (cold) : {dash_cold_ms:6.2f} ms  [Budget < 500 ms]")
@@ -134,10 +137,16 @@ def run_benchmark(student_count: int = 1000) -> int:
         print(f"  /api/students/list         : {list_ms:6.2f} ms  [Budget < 300 ms]")
         print(f"  /api/search?q=Student50    : {search_ms:6.2f} ms  [Budget < 150 ms]")
         print(f"  /api/students/10/360       : {s360_ms:6.2f} ms  [Budget < 300 ms]")
+        print(f"  /api/fees/vouchers         : {vouchers_ms:6.2f} ms  [Budget < 300 ms]")
+        print(f"  /api/families?q=Student50  : {families_ms:6.2f} ms  [Budget < 300 ms]")
+        print(f"  /api/fees/tally            : {tally_ms:6.2f} ms  [Budget < 300 ms]")
 
         assert dash_cold_ms < 500.0, f"Dashboard cold {dash_cold_ms:.1f}ms > 500ms"
         assert list_ms < 300.0, f"Students list {list_ms:.1f}ms > 300ms"
         assert search_ms < 150.0, f"Search {search_ms:.1f}ms > 150ms"
+        assert vouchers_ms < 300.0, f"Fee vouchers {vouchers_ms:.1f}ms > 300ms"
+        assert families_ms < 300.0, f"Families search {families_ms:.1f}ms > 300ms"
+        assert tally_ms < 300.0, f"Daily tally {tally_ms:.1f}ms > 300ms"
         print("ALL PERFORMANCE BUDGETS PASSED!")
         return 0
 

@@ -10,10 +10,10 @@ import { esc } from './dom.js';
 import { icon } from './icons.js';
 
 export const NAV_ITEMS = [
-  { key: 'dashboard',  label: 'Aaj Ka Din',      iconName: 'dashboard',  roles: ['*'], section: null },
+  { key: 'dashboard',  label: 'Overview',        iconName: 'dashboard',  roles: ['*'], section: null },
   { key: 'school',     label: 'Students',        iconName: 'users',      roles: ['admin', 'principal', 'front_desk', 'fee_clerk', 'teacher', 'exam_incharge'], section: 'Academic' },
   { key: 'attendance', label: 'Attendance',      iconName: 'attendance', roles: ['admin', 'principal', 'teacher', 'front_desk'], section: 'Academic' },
-  { key: 'fees',       label: 'Fee Management',  iconName: 'fees',       roles: ['admin', 'principal', 'fee_clerk'], section: 'Finance' },
+  { key: 'fees',       label: 'Fees & Billing',  iconName: 'fees',       roles: ['admin', 'principal', 'fee_clerk'], section: 'Finance' },
   { key: 'exam',       label: 'Exams & Results', iconName: 'exam',       roles: ['admin', 'principal', 'teacher', 'exam_incharge'], section: 'Academic' },
   { key: 'assignment', label: 'Assignments',     iconName: 'assignment', roles: ['admin', 'principal', 'teacher'], section: 'Academic' },
   { key: 'timetable',  label: 'Timetable',       iconName: 'timetable',  roles: ['admin', 'principal', 'teacher', 'exam_incharge'], section: 'Academic' },

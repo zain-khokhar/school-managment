@@ -13,9 +13,11 @@ from desktop_app.services.audit_service import AuditService, utc_now_iso
 
 DEFAULT_PREFERENCES: dict[str, Any] = {
     "bilingual_prints": False,
+    "thermal_receipt_default": False,
     "enable_hostel": True,
     "enable_transport": True,
     "ramazan_mode": False,
+    "short_bell_schedule": False,
     "checklist_dismissed": False,
     "bank_name": "",
     "bank_account_title": "",
