@@ -9,7 +9,8 @@ import { esc, toast, confirm } from '../../core/dom.js';
 import { formatPKR, stateLabel, stateBadgeClass } from '../../core/format.js';
 import { icon } from '../../core/icons.js';
 import { navigateTo } from '../../core/router.js';
-import { openNewStudentModal, performStudentAction } from '../school/student-modal.js';
+import { performStudentAction } from '../school/student-modal.js';
+import { openAdmissionWizardModal } from '../school/admission-wizard.js';
 import { renderFrontDeskHome, renderExamHome } from './ops-homes.js';
 
 export function renderRoleHome(role, d) {
@@ -177,7 +178,7 @@ export function attachRoleHomeEvents() {
     });
   });
   document.getElementById('fd-new-admission')?.addEventListener('click', () => {
-    openNewStudentModal(() => navigateTo('dashboard'));
+    openAdmissionWizardModal(() => navigateTo('dashboard'));
   });
   document.querySelectorAll('[data-fd-admit]').forEach(btn => {
     btn.addEventListener('click', () => {

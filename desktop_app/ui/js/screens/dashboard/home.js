@@ -12,7 +12,7 @@ import { esc, toast } from '../../core/dom.js';
 import { formatPKR, formatDateTime, stateLabel } from '../../core/format.js';
 import { icon } from '../../core/icons.js';
 import { navigateTo } from '../../core/router.js';
-import { openNewStudentModal } from '../school/student-modal.js';
+import { openAdmissionWizardModal } from '../school/admission-wizard.js';
 import { renderRoleHome, attachRoleHomeEvents } from './role-homes.js';
 
 export async function renderDashboardScreen() {
@@ -241,7 +241,7 @@ function _buildPrincipalHomeHtml(d) {
 
 function _attachPrincipalEvents() {
   document.getElementById('dash-btn-admit')?.addEventListener('click', () => {
-    openNewStudentModal(() => navigateTo('dashboard'));
+    openAdmissionWizardModal(() => navigateTo('dashboard'));
   });
   document.getElementById('dash-quick-backup')?.addEventListener('click', async e => {
     const btn = e.currentTarget;

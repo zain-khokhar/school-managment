@@ -22,6 +22,9 @@ import { renderAttendanceScreen, attachAttendanceEvents } from './screens/attend
 import { renderStudentsScreen } from './screens/school/students-list.js';
 import { renderStudentProfileScreen } from './screens/school/student-profile.js';
 import { renderFeesScreen } from './screens/fees/fees-workspace.js';
+import { renderExamScreen } from './screens/exam/exam-workspace.js';
+import { renderTimetableScreen } from './screens/timetable/weekly-grid.js';
+import { renderLibraryScreen } from './screens/library/library-screen.js';
 import { renderSettingsScreen } from './screens/settings/settings-screen.js';
 
 async function loadBootstrapData() {
@@ -55,6 +58,9 @@ function registerAllScreens() {
   registerScreen('school',     async () => renderStudentsScreen());
   registerScreen('student360', async () => renderStudentProfileScreen());
   registerScreen('fees',       async () => renderFeesScreen());
+  registerScreen('exam',       async () => renderExamScreen());
+  registerScreen('timetable',  async () => renderTimetableScreen());
+  registerScreen('library',    async () => renderLibraryScreen());
   registerScreen('settings',   async () => renderSettingsScreen());
 
   registerScreen('attendance', async () => {
@@ -63,7 +69,7 @@ function registerAllScreens() {
     return html;
   });
 
-  const legacyTabs = ['assignment', 'timetable', 'exam', 'library', 'event', 'hostel', 'transport'];
+  const legacyTabs = ['assignment', 'event', 'hostel', 'transport'];
   for (const tab of legacyTabs) {
     registerScreen(tab, () => {
       if (window.ERP_LEGACY && typeof window.ERP_LEGACY.renderTab === 'function') {

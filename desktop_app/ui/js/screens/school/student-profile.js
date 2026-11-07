@@ -15,6 +15,7 @@ import { fullName, formatPKR, formatDate, formatDateTime, stateLabel, stateBadge
 import { icon } from '../../core/icons.js';
 import { navigateTo } from '../../core/router.js';
 import { performStudentAction } from './student-modal.js';
+import { openPtmSheetPrintPreview, openIdCardsPrintPreview } from '../../print/academic-print.js';
 
 let _activeSubTab = 'bio';
 let _cachedProfile = null;
@@ -56,7 +57,8 @@ function _buildProfileHtml(d) {
       <div class="page-header-actions">
         ${canManageAdmission && s.state === 'draft' ? `<button class="btn btn-primary btn-sm" data-s360-act="admission_done">Confirm Admission</button>` : ''}
         ${canManageAdmission && s.state === 'done' ? `<button class="btn btn-secondary btn-sm" data-s360-act="set_alumni">Mark Alumni</button>` : ''}
-        <button class="btn btn-secondary btn-sm" id="s360-print">${icon('printer', 14)} Print Summary</button>
+        <button class="btn btn-secondary btn-sm" id="s360-idcard">${icon('printer', 14)} ID Card</button>
+        <button class="btn btn-secondary btn-sm" id="s360-ptm">${icon('printer', 14)} PTM 1-Pager (S7)</button>
       </div>
     </div>
 
@@ -213,7 +215,14 @@ function _renderSubTab(tab, d) {
 }
 
 function _bindProfileEvents() {
-  document.getElementById('s360-back')?.addEventListener('click', () => navigateTo('school'));
+  document.getElementById('s360-btm')?.addEventListener('click', () => {
+    const sid = get('selectedStudentId');
+    if (sid) openPtmSheetPrintPreview({ studentIds: [sid] });
+  });
+  document.getElementById('s360-idcard')?.addEventListener('click', () => {
+    const sid = get('selectedStudentId');
+    if (sid) openIdCardsPrintPreview({ studentIds: [sid] });
+  });
   document.getElementById('s360-print')?.addEventListener('click', () => window.print());
 
   document.querySelectorAll('[data-s360-act]').forEach(btn => {

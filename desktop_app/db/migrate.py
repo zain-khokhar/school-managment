@@ -131,7 +131,41 @@ CREATE INDEX IF NOT EXISTS idx_student_mobile
     ON student_student(contact_mobile);
 """
 
-_ALLOWED_ALTER_TABLES = frozenset({"student_payslip", "school_parent"})
+MIGRATION_003_SQL = """
+CREATE TABLE IF NOT EXISTS calendar_day (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    date TEXT NOT NULL UNIQUE,
+    title TEXT NOT NULL,
+    day_type TEXT NOT NULL DEFAULT 'holiday'
+        CHECK(day_type IN ('holiday', 'ramazan', 'exam_day', 'ptm', 'vacation', 'event')),
+    is_off_day INTEGER NOT NULL DEFAULT 1,
+    bell_profile TEXT NOT NULL DEFAULT 'regular'
+        CHECK(bell_profile IN ('regular', 'ramazan', 'winter')),
+    note TEXT DEFAULT '',
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS timetable_substitution (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    date TEXT NOT NULL,
+    line_id INTEGER NOT NULL REFERENCES time_table_line(id) ON DELETE CASCADE,
+    original_teacher_id INTEGER REFERENCES school_teacher(id) ON DELETE SET NULL,
+    substitute_teacher_id INTEGER NOT NULL REFERENCES school_teacher(id) ON DELETE CASCADE,
+    reason TEXT DEFAULT '',
+    created_by TEXT DEFAULT 'admin',
+    created_at TEXT NOT NULL,
+    UNIQUE(date, line_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_calendar_day_date ON calendar_day(date, is_off_day);
+CREATE INDEX IF NOT EXISTS idx_tt_sub_date ON timetable_substitution(date, line_id);
+CREATE INDEX IF NOT EXISTS idx_exam_result_rank ON exam_result(s_exam_ids, standard_id, rank);
+CREATE INDEX IF NOT EXISTS idx_student_b_form ON student_student(b_form_no);
+"""
+
+_ALLOWED_ALTER_TABLES = frozenset(
+    {"student_payslip", "school_parent", "exam_result", "exam_subject", "student_student"}
+)
 
 
 def _execute_sql_statements(conn: sqlite3.Connection, script: str) -> None:
@@ -250,9 +284,19 @@ def _migration_002(conn: sqlite3.Connection) -> None:
         )
 
 
+def _migration_003(conn: sqlite3.Connection) -> None:
+    _add_column_if_missing(conn, "exam_result", "rank", "INTEGER")
+    _add_column_if_missing(conn, "exam_result", "remarks", "TEXT DEFAULT ''")
+    _add_column_if_missing(conn, "exam_subject", "is_absent", "INTEGER NOT NULL DEFAULT 0")
+    _add_column_if_missing(conn, "student_student", "b_form_no", "TEXT DEFAULT ''")
+    _add_column_if_missing(conn, "student_student", "documents_json", "TEXT DEFAULT '{}'")
+    _execute_sql_statements(conn, MIGRATION_003_SQL)
+
+
 MIGRATIONS: list[tuple[int, str, Callable[[sqlite3.Connection], None]]] = [
     (1, "phase2_auth_audit_settings", _migration_001),
     (2, "phase3_fees_family_paisa_ledger", _migration_002),
+    (3, "phase4_academics_calendar_admissions_ranks", _migration_003),
 ]
 
 LATEST_SCHEMA_VERSION = MIGRATIONS[-1][0]

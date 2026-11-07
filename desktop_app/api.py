@@ -25,6 +25,8 @@ from desktop_app.services.library_service import LibraryService
 from desktop_app.services.school_service import SchoolService
 from desktop_app.services.seed_service import ensure_seed_data
 import logging
+from desktop_app.routes.academics_routes import register_academics_routes
+from desktop_app.routes.admissions_import_routes import register_admissions_import_routes
 from desktop_app.routes.auth_routes import register_auth_routes
 from desktop_app.routes.dashboard_routes import register_dashboard_routes
 from desktop_app.routes.family_routes import register_family_routes
@@ -32,6 +34,8 @@ from desktop_app.routes.fees_routes import register_fees_routes
 from desktop_app.routes.phase1_routes import register_phase1_routes
 from desktop_app.routes.rbac import register_rbac_and_audit
 from desktop_app.routes.settings_routes import register_settings_routes
+from desktop_app.services.academic_engine_service import AcademicEngineService
+from desktop_app.services.admission_import_service import AdmissionImportService
 from desktop_app.services.audit_service import AuditService
 from desktop_app.services.auth_service import AuthService
 from desktop_app.services.backup_service import BackupService
@@ -81,6 +85,10 @@ def create_app(
     dashboard_svc = DashboardService(database, settings_svc, backup_svc, audit_svc)
     fee_engine_svc = FeeEngineService(database, audit_svc, settings_svc)
     family_svc = FamilyService(database, fee_engine_svc, audit_svc, settings_svc)
+    academic_svc = AcademicEngineService(database, exam_svc, audit_svc, settings_svc)
+    adm_import_svc = AdmissionImportService(
+        database, school_svc, family_svc, fee_engine_svc, lib_svc, settings_svc, audit_svc
+    )
 
     @app.before_request
     def check_local_host() -> tuple[Response, int] | None:
@@ -171,6 +179,7 @@ def create_app(
                 },
                 "timetable": {
                     "timetables": tt_svc.list_timetables(),
+                    "calendar_days": academic_svc.list_calendar_days(),
                 },
                 "exam": {
                     "exams": exam_svc.list_exams(),
@@ -662,7 +671,7 @@ def create_app(
 
 
     # -------------------------------------------------------------------------
-    # Phase 1, 2 & 3 Modular Routes + Deny-by-Default RBAC & Audit Middleware
+    # Phase 1, 2, 3 & 4 Modular Routes + Deny-by-Default RBAC & Audit Middleware
     # -------------------------------------------------------------------------
     register_phase1_routes(app, database, att_svc)
     register_auth_routes(app, auth_svc, enforce_auth=enforce_auth)
@@ -670,6 +679,8 @@ def create_app(
     register_settings_routes(app, settings_svc, backup_svc, auth_svc)
     register_fees_routes(app, fee_engine_svc)
     register_family_routes(app, family_svc)
+    register_academics_routes(app, academic_svc, tt_svc)
+    register_admissions_import_routes(app, adm_import_svc)
     register_rbac_and_audit(app, auth_svc, audit_svc, dashboard_svc, enforce_auth=enforce_auth)
 
     return app

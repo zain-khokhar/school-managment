@@ -19,7 +19,7 @@ def check_files() -> int:
     violations: list[str] = []
     checked = 0
 
-    print("=== Anti-Monolith File Size & Modularity Check (Phases 1-3) ===")
+    print("=== Anti-Monolith File Size & Modularity Check (Phases 1-4) ===")
 
     for js_file in sorted((ROOT / "desktop_app" / "ui" / "js").rglob("*.js")):
         lines = len(js_file.read_text(encoding="utf-8").splitlines())
@@ -58,6 +58,10 @@ def check_files() -> int:
         "fee_engine_service.py",
         "fee_rules_and_print.py",
         "family_service.py",
+        "academic_engine_service.py",
+        "calendar_timetable_mixin.py",
+        "admission_import_service.py",
+        "student_prints_mixin.py",
     ]
     for svc_name in phase_services:
         svc_file = ROOT / "desktop_app" / "services" / svc_name

@@ -12,6 +12,8 @@ import { fullName, stateLabel, stateBadgeClass } from '../../core/format.js';
 import { icon } from '../../core/icons.js';
 import { navigateTo } from '../../core/router.js';
 import { openNewStudentModal, performStudentAction } from './student-modal.js';
+import { openAdmissionWizardModal, openBulkStudentImportModal } from './admission-wizard.js';
+import { openIdCardsPrintPreview, openPtmSheetPrintPreview } from '../../print/academic-print.js';
 
 let _listState = { page: 1, q: '', classId: '', yearId: '', total: 0, pages: 1, loading: false };
 let _searchTimer = null;
@@ -34,7 +36,12 @@ export async function renderStudentsScreen() {
         <div class="page-header-desc" id="students-count-desc">Loading records...</div>
       </div>
       <div class="page-header-actions">
-        ${canManage ? `<button class="btn btn-primary" id="btn-new-student">${icon('plus', 15)} New Admission</button>` : ''}
+        <a class="btn btn-secondary btn-sm" href="/api/export/students.xlsx" download>${icon('download', 14)} Export Excel</a>
+        <button class="btn btn-secondary btn-sm" id="btn-print-id-cards">${icon('printer', 14)} ID Cards</button>
+        <button class="btn btn-secondary btn-sm" id="btn-print-ptm-sheets">${icon('printer', 14)} PTM Sheets</button>
+        ${canManage ? `<button class="btn btn-secondary btn-sm" id="btn-import-students">${icon('plus', 14)} Bulk Import</button>` : ''}
+        ${canManage ? `<button class="btn btn-secondary btn-sm" id="btn-quick-student">Quick Entry</button>` : ''}
+        ${canManage ? `<button class="btn btn-primary" id="btn-new-student">${icon('plus', 15)} Admission Wizard</button>` : ''}
       </div>
     </div>
 
@@ -102,9 +109,21 @@ function _attachStudentEvents() {
     _listState = { ..._listState, q: '', classId: '', yearId: '', page: 1 };
     _loadStudents();
   });
+  document.getElementById('btn-quick-student')?.addEventListener('click', () => {
+    openNewStudentModal(() => _loadStudents());
+  });
+  document.getElementById('btn-import-students')?.addEventListener('click', () => {
+    openBulkStudentImportModal(() => _loadStudents());
+  });
+  document.getElementById('btn-print-id-cards')?.addEventListener('click', () => {
+    openIdCardsPrintPreview({ classId: _listState.classId });
+  });
+  document.getElementById('btn-print-ptm-sheets')?.addEventListener('click', () => {
+    openPtmSheetPrintPreview({ classId: _listState.classId });
+  });
 
   document.getElementById('btn-new-student')?.addEventListener('click', () => {
-    openNewStudentModal(() => _loadStudents());
+    openAdmissionWizardModal(() => _loadStudents());
   });
 
   const tableWrap = document.getElementById('students-table-wrap');

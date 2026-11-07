@@ -142,8 +142,23 @@ class AttendanceService:
         user_id: int | None = None,
         att_date: str | date | None = None,
         subject_id: int | None = None,
+        allow_holiday: bool = False,
     ) -> dict[str, Any]:
         dt = parse_date(att_date) or date.today()
+        if not allow_holiday:
+            with self.db.connection() as conn:
+                cal_table = conn.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table' AND name='calendar_day'"
+                ).fetchone()
+                if cal_table:
+                    hol = conn.execute(
+                        "SELECT title FROM calendar_day WHERE date = ? AND is_off_day = 1 LIMIT 1",
+                        (dt.isoformat(),),
+                    ).fetchone()
+                    if hol:
+                        raise ValidationError(
+                            f"Cannot record daily attendance on scheduled holiday: '{hol['title']}' ({dt.isoformat()})!"
+                        )
         if dt > date.today():
             raise ValidationError("Date should be less than or equal to current date!")
 
