@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+import os
 from pathlib import Path
 import sys
 from typing import Any
@@ -59,6 +60,7 @@ def create_app(
     db: Database | None = None,
     seed: bool = True,
     enforce_auth: bool | None = None,
+    allow_remote: bool = False,
 ) -> Flask:
     """Create and configure the local Flask application for the School Management Desktop App."""
     database = db or Database()
@@ -93,8 +95,13 @@ def create_app(
     )
     outbox_svc = OutboxService(database, audit_svc, settings_svc)
 
+    allow_remote_env = os.getenv("ERP_ALLOW_REMOTE", "0").lower() in ("1", "true", "yes")
+    remote_ok = allow_remote or allow_remote_env
+
     @app.before_request
     def check_local_host() -> tuple[Response, int] | None:
+        if remote_ok:
+            return None
         host = (request.host or "").split(":")[0].lower()
         if host not in ("127.0.0.1", "localhost", ""):
             return jsonify({"ok": False, "error": "Localhost access only"}), 403
