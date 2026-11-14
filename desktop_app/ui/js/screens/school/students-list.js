@@ -12,6 +12,7 @@ import { fullName, stateLabel, stateBadgeClass } from '../../core/format.js';
 import { icon } from '../../core/icons.js';
 import { navigateTo } from '../../core/router.js';
 import { openNewStudentModal, performStudentAction } from './student-modal.js';
+import { openNewClassModal, openNewTeacherModal } from './school-management.js';
 import { openAdmissionWizardModal, openBulkStudentImportModal } from './admission-wizard.js';
 import { openIdCardsPrintPreview, openPtmSheetPrintPreview } from '../../print/academic-print.js';
 
@@ -36,6 +37,8 @@ export async function renderStudentsScreen() {
         <div class="page-header-desc" id="students-count-desc">Loading records...</div>
       </div>
       <div class="page-header-actions">
+        ${['admin', 'principal'].includes(get('role') || 'admin') ? `<button class="btn btn-secondary btn-sm" id="btn-new-class">${icon('plus', 14)} Add Class</button>
+        <button class="btn btn-secondary btn-sm" id="btn-new-teacher">${icon('plus', 14)} Add Teacher</button>` : ''}
         <a class="btn btn-secondary btn-sm" href="/api/export/students.xlsx" download>${icon('download', 14)} Export Excel</a>
         <button class="btn btn-secondary btn-sm" id="btn-print-id-cards">${icon('printer', 14)} ID Cards</button>
         <button class="btn btn-secondary btn-sm" id="btn-print-ptm-sheets">${icon('printer', 14)} PTM Sheets</button>
@@ -80,6 +83,8 @@ export async function renderStudentsScreen() {
 }
 
 function _attachStudentEvents() {
+  document.getElementById('btn-new-class')?.addEventListener('click', openNewClassModal);
+  document.getElementById('btn-new-teacher')?.addEventListener('click', openNewTeacherModal);
   document.getElementById('students-search')?.addEventListener('input', e => {
     clearTimeout(_searchTimer);
     _searchTimer = setTimeout(() => {

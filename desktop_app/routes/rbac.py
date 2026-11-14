@@ -59,6 +59,7 @@ ROUTE_PERMISSIONS: dict[tuple[str, str], frozenset[str]] = {
     ("POST", "/api/students/<int:student_id>/action"): FRONT_DESK_STAFF,
     ("POST", "/api/school/assign-roll-no"): FRONT_DESK_STAFF,
     ("POST", "/api/school/move-standards"): ADMINS,
+    ("POST", "/api/school/classes"): ADMINS,
     ("POST", "/api/teachers"): ADMINS,
     ("GET", "/api/admissions/check-duplicate"): FRONT_DESK_STAFF,
     ("POST", "/api/admissions/enroll"): FRONT_DESK_STAFF,
@@ -284,4 +285,3 @@ def register_rbac_and_audit(
                     ip_address=request.remote_addr or "127.0.0.1",
                 )
         return response
-

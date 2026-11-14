@@ -278,6 +278,21 @@ def create_app(
         moved = school_svc.move_standards(academic_year_id=int(data["academic_year_id"]))
         return jsonify({"ok": True, "moved": len(moved)})
 
+    @app.post("/api/school/classes")
+    def create_school_class() -> Response:
+        data: dict[str, Any] = request.get_json(force=True)
+        school = school_svc.create_school_standard(
+            school_id=int(data["school_id"]),
+            standard_id=int(data["standard_id"]),
+            division_id=int(data["division_id"]),
+            medium_id=int(data["medium_id"]),
+            capacity=int(data["capacity"]),
+            user_id=int(data["teacher_id"]) if data.get("teacher_id") else None,
+            class_room_id=int(data["class_room_id"]) if data.get("class_room_id") else None,
+            subject_ids=[int(value) for value in (data.get("subject_ids") or [])],
+        )
+        return jsonify({"ok": True, "class": school})
+
     @app.post("/api/teachers")
     def create_teacher() -> Response:
         data: dict[str, Any] = request.get_json(force=True)
